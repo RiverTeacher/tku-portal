@@ -47,12 +47,12 @@
 <body>
     <div class="container">
         <div id="loader" class="loader"></div>
-        <div id="message">ステータスを確認中...</div>
+        <div id="message">接続中...</div>
     </div>
 
     <script>
         const CHECK_URL = 'https://riverteacher.gitlab.io/yk-english-vocabulary-test/takayarpg2/status.html';
-        const REDIRECT_URL = 'https://portal.tku.net';
+        const REDIRECT_URL = 'https://portal.tku.ac.jp';
 
         async function checkStatusAndRedirect() {
             const messageEl = document.getElementById('message');
