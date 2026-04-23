@@ -220,9 +220,8 @@
 <iframe id="content-frame" src="about:blank"></iframe>
 
 <script>
-  // ★ ここを相対パスに変更しました
   const STATUS_URL = 'https://riverteacher.gitlab.io/yk-english-vocabulary-test/takayarpg2/status.html';
-  const TARGET_APP = './title.html'; // 相対パス
+  const TARGET_APP = './title.html';
   const WAIT_MS    = 1000;
 
   const statusScreen = document.getElementById('status-screen');
@@ -273,7 +272,6 @@
     contentFrame.style.display = 'none';
     contentFrame.classList.remove('show');
     
-    // UIリセット
     successFlash.classList.remove('fire');
     successCheck.classList.remove('pop');
     loadStatus.classList.remove('ok');
@@ -292,10 +290,11 @@
     glow2.classList.add('active');
 
     try {
-      const res = await fetch(STATUS_URL, { cache: 'no-store' });
-      if (!res.ok) throw new Error('サーバー応答なし (' + res.status + ')');
+      // ステータスチェック自体もキャッシュを避けるためにタイムスタンプを付与
+      const statusRes = await fetch(`${STATUS_URL}?t=${Date.now()}`, { cache: 'no-store' });
+      if (!statusRes.ok) throw new Error('サーバー応答なし (' + statusRes.status + ')');
       
-      const text = await res.text();
+      const text = await statusRes.text();
       if (text.trim() === 'allow') {
         loadTitle.textContent = '確認完了';
         loadStatus.textContent = 'データを読み込んでいます...';
@@ -307,8 +306,10 @@
         await new Promise(r => setTimeout(r, WAIT_MS));
         cancelAnimationFrame(timerRAF);
 
-        // 相対パスの app.html を iframe にセット
-        contentFrame.src = TARGET_APP;
+        // ★ iframeのsrcにタイムスタンプを付与
+        const timestamp = Date.now();
+        contentFrame.src = `${TARGET_APP}?t=${timestamp}`;
+        
         contentFrame.style.display = 'block';
         setTimeout(() => contentFrame.classList.add('show'), 50);
         statusScreen.style.display = 'none';
