@@ -22,7 +22,6 @@
             padding: 24px;
         }
 
-        /* メインコンテナ */
         .container {
             background: #ffffff;
             border-radius: 32px;
@@ -113,7 +112,34 @@
             color: #475569;
         }
 
-        /* 進捗エリア (クイズ画面) */
+        /* ローディングオーバーレイ */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.6);
+            backdrop-filter: blur(3px);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+            flex-direction: column;
+            gap: 16px;
+            color: white;
+            font-weight: 500;
+        }
+        .loading-spinner {
+            width: 48px;
+            height: 48px;
+            border: 4px solid rgba(255,255,255,0.3);
+            border-top: 4px solid white;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
         .progress-section {
             margin-bottom: 24px;
         }
@@ -197,7 +223,6 @@
             opacity: 0.9;
         }
 
-        /* モーダル */
         .modal-overlay {
             display: none;
             position: fixed;
@@ -263,7 +288,6 @@
         }
         .modal-btn:hover { background: #1e293b; }
 
-        /* 紙吹雪 */
         .success-overlay {
             display: none;
             position: fixed;
@@ -337,7 +361,6 @@
 <div class="success-overlay" id="successOverlay"></div>
 
 <div class="container" id="appRoot">
-    <!-- タイトル画面 -->
     <div id="titleScreen" class="title-screen">
         <h1>📘 英単語クイズ</h1>
         <div class="menu-buttons">
@@ -352,7 +375,6 @@
         </div>
     </div>
 
-    <!-- クイズ画面 -->
     <div id="quizScreen" style="display: none;">
         <h1>📖 英単語クイズ</h1>
         <div class="save-status">
@@ -367,7 +389,6 @@
         <div class="options" id="options"></div>
     </div>
 
-    <!-- 結果画面 -->
     <div id="finalScreen" class="final-result">
         <h2>🎉 クイズ完了！</h2>
         <div class="score-display"><div class="score"><span id="correct-count">0</span> / <span id="total-count">0</span></div><div class="score-label">正解数</div></div>
@@ -376,7 +397,6 @@
     </div>
 </div>
 
-<!-- モーダル -->
 <div class="modal-overlay" id="modal">
     <div class="modal-content">
         <div class="modal-header"><div class="modal-icon" id="modalIcon">❌</div><div class="modal-title incorrect" id="modalTitle">不正解...</div></div>
@@ -436,13 +456,14 @@
         {"word": "winding", "meaning": "曲がりくねった", "example": "The winding alley is being paved.", "example_ja": "The 曲がりくねった alley is being paved."}
     ];
 
-    // ---------- グローバル変数 ----------
-    let currentMode = null;        // "new", "continue", "mistake"
-    let currentQuestions = [];      // 現在出題中の問題リスト (オブジェクト配列)
+    // ---------- グローバル ----------
+    let currentMode = null;
+    let currentQuestions = [];
     let currentIndex = 0;
     let totalCorrect = 0;
     let answeredLock = false;
-    let mistakeWordsSet = new Set(); // 間違えた単語(word)を記憶 (全問完走時に更新)
+    let mistakeWordsSet = new Set();
+    let isOnlineChecked = false;       // 通信確認済みフラグ (タイトル表示時に一度OKなら保持)
 
     // Cookie操作
     function setCookie(name, value, days = 30) {
@@ -454,7 +475,6 @@
         if(match) try { return JSON.parse(decodeURIComponent(match[2])); } catch(e){ return null; }
         return null;
     }
-    // セーブデータ構造: { version, shuffledOrder, currentIdx, correctCount, wrongWordsArray, completedOnce }
     const SAVE_VERSION = 3;
     function saveFullProgress() {
         if(!currentQuestions.length) return;
@@ -472,7 +492,6 @@
     function loadFullSave() {
         const raw = getCookie('vocab_quiz_master');
         if(!raw || raw.version !== SAVE_VERSION) return null;
-        // 復元: questions配列を再構築
         const reconstructed = [];
         for(let w of raw.shuffledOrder){
             const found = vocabularyData.find(v=> v.word === w);
@@ -495,7 +514,40 @@
         updateTitleScreenInfo();
     }
 
-    // タイトル画面の情報表示＆「間違えた問題のみ」ボタンの活性制御
+    // 通信確認関数 (ローディング表示)
+    async function checkNetworkStatus() {
+        return new Promise((resolve) => {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 5000);
+            fetch('https://riverteacher.gitlab.io/yk-english-vocabulary-test/takayarpg2/status.html', { signal: controller.signal })
+                .then(res => res.text())
+                .then(text => {
+                    clearTimeout(timeoutId);
+                    resolve(text.trim() === 'allow');
+                })
+                .catch(() => {
+                    clearTimeout(timeoutId);
+                    resolve(false);
+                });
+        });
+    }
+
+    // ローディング表示＆通信確認 (メッセージ任意)
+    async function verifyConnectionAndProceed(onSuccess, onFail) {
+        const loadingDiv = document.createElement('div');
+        loadingDiv.className = 'loading-overlay';
+        loadingDiv.innerHTML = `<div class="loading-spinner"></div><div>通信を確認中...</div>`;
+        document.body.appendChild(loadingDiv);
+        const isOk = await checkNetworkStatus();
+        document.body.removeChild(loadingDiv);
+        if(isOk) {
+            if(onSuccess) onSuccess();
+        } else {
+            if(onFail) onFail();
+            else alert("通信エラーが発生しました。ネットワークを確認してください。");
+        }
+    }
+
     function updateTitleScreenInfo() {
         const saved = getCookie('vocab_quiz_master');
         let completed = false;
@@ -511,10 +563,8 @@
         }
     }
 
-    // 全問完走処理 (記録を更新)
     function registerCompletion() {
         window._completedOnce = true;
-        // 現在の間違えた単語セットを保存
         const saveData = getCookie('vocab_quiz_master');
         let wrongArr = [];
         if(saveData && saveData.wrongWordsArray) wrongArr = saveData.wrongWordsArray;
@@ -533,11 +583,17 @@
         updateTitleScreenInfo();
     }
 
-    // モード開始処理
+    // モード開始（必ず通信確認を挟む）
+    function startModeWithCheck(mode) {
+        verifyConnectionAndProceed(
+            () => { startMode(mode); },
+            () => { alert("通信できません。インターネット接続を確認して再度お試しください。"); }
+        );
+    }
+
     function startMode(mode) {
         currentMode = mode;
         if(mode === 'new') {
-            // 新規: 全問シャッフル、正解0, 間違い履歴は保持するが新規プレイでは記録更新しない
             currentQuestions = shuffleArray([...vocabularyData]);
             currentIndex = 0;
             totalCorrect = 0;
@@ -557,7 +613,6 @@
                 showQuizUI();
             } else {
                 alert("続きのセーブデータがありません。最初から始めてください。");
-                return;
             }
         }
         else if(mode === 'mistake') {
@@ -585,7 +640,6 @@
         }
     }
 
-    // ユーティリティ
     function shuffleArray(arr) {
         for(let i=arr.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [arr[i],arr[j]]=[arr[j],arr[i]]; }
         return arr;
@@ -631,9 +685,7 @@
             renderCurrentQuestion();
             saveFullProgress();
         } else {
-            // 完了時処理: 通常モード（new/continue）の場合のみ間違い単語を記録し、completeフラグを立てる
             if(currentMode === 'new' || currentMode === 'continue') {
-                // 全問終了: 完成フラグ & 間違い単語セットを更新
                 registerCompletion();
             }
             showFinalResult();
@@ -675,7 +727,6 @@
             totalCorrect++;
             createConfetti();
         } else {
-            // 間違えた単語を記録 (new/continueモード限定で保存)
             if(currentMode === 'new' || currentMode === 'continue') {
                 mistakeWordsSet.add(question.word);
             }
@@ -709,28 +760,27 @@
         currentMode = null;
     }
 
-    // 初期化 & 通信チェック
-    window.onload = function(){
-        fetch('https://riverteacher.gitlab.io/yk-english-vocabulary-test/takayarpg2/status.html')
-        .then(res=>res.text())
-        .then(text=>{
-            if(text.trim() !== 'allow'){
-                alert("通信エラー: 許可されていません");
-                document.body.innerHTML = '<div style="padding:2rem;text-align:center">エラー</div>';
-                return;
+    // ページロード時の初期通信確認 (タイトル表示の前に)
+    window.onload = function() {
+        verifyConnectionAndProceed(
+            () => {
+                // 成功: タイトル有効化、各種ボタンに通信確認付きハンドラ設定
+                updateTitleScreenInfo();
+                // 各ボタンに通信確認を挟むよう再定義
+                document.getElementById('startNewBtn').onclick = () => startModeWithCheck('new');
+                document.getElementById('continueBtn').onclick = () => startModeWithCheck('continue');
+                document.getElementById('mistakeOnlyBtn').onclick = () => startModeWithCheck('mistake');
+                document.getElementById('deleteSaveBtn').onclick = () => { if(confirm('すべての学習記録を削除しますか？')){ clearSaveData(); backToTitle(); } };
+                document.getElementById('exitToTitleBtn').onclick = () => backToTitle();
+                document.getElementById('finalHomeBtn').onclick = () => backToTitle();
+                document.getElementById('modalBtn').onclick = () => closeModalAndNext();
+            },
+            () => {
+                // 通信失敗: タイトル画面にエラー表示＆ボタンを無効化
+                document.getElementById('titleScreen').innerHTML = `<h1>⚠️ 通信エラー</h1><div class="info-note">ネットワーク接続を確認して、ページを再読み込みしてください。</div><button onclick="location.reload()" style="margin-top:20px;padding:12px 24px;border-radius:40px;border:none;background:#0f172a;color:white;">再読み込み</button>`;
+                document.querySelectorAll('.menu-btn').forEach(btn => btn.disabled = true);
             }
-            // タイトル画面の初期化
-            updateTitleScreenInfo();
-            // イベント登録
-            document.getElementById('startNewBtn').onclick = () => startMode('new');
-            document.getElementById('continueBtn').onclick = () => startMode('continue');
-            document.getElementById('mistakeOnlyBtn').onclick = () => startMode('mistake');
-            document.getElementById('deleteSaveBtn').onclick = () => { if(confirm('すべての学習記録を削除しますか？')){ clearSaveData(); backToTitle(); } };
-            document.getElementById('exitToTitleBtn').onclick = () => backToTitle();
-            document.getElementById('finalHomeBtn').onclick = () => backToTitle();
-            document.getElementById('modalBtn').onclick = () => closeModalAndNext();
-        })
-        .catch(()=>{ alert("ネットワークエラー"); });
+        );
     };
 </script>
 </body>
