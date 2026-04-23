@@ -463,7 +463,7 @@
     let totalCorrect = 0;
     let answeredLock = false;
     let mistakeWordsSet = new Set();
-    let isOnlineChecked = false;       // 通信確認済みフラグ (タイトル表示時に一度OKなら保持)
+    const STATUS_URL = 'https://riverteacher.gitlab.io/yk-english-vocabulary-test/takayarpg2/status.html';
 
     // Cookie操作
     function setCookie(name, value, days = 30) {
@@ -514,12 +514,15 @@
         updateTitleScreenInfo();
     }
 
-    // 通信確認関数 (ローディング表示)
+    // 通信確認関数 (タイムスタンプを付与)
     async function checkNetworkStatus() {
         return new Promise((resolve) => {
             const controller = new AbortController();
             const timeoutId = setTimeout(() => controller.abort(), 5000);
-            fetch('https://riverteacher.gitlab.io/yk-english-vocabulary-test/takayarpg2/status.html', { signal: controller.signal })
+            
+            // ★ URLにタイムスタンプを付与してキャッシュを回避
+            const timestamp = Date.now();
+            fetch(`${STATUS_URL}?t=${timestamp}`, { signal: controller.signal, cache: 'no-store' })
                 .then(res => res.text())
                 .then(text => {
                     clearTimeout(timeoutId);
@@ -532,7 +535,7 @@
         });
     }
 
-    // ローディング表示＆通信確認 (メッセージ任意)
+    // ローディング表示＆通信確認
     async function verifyConnectionAndProceed(onSuccess, onFail) {
         const loadingDiv = document.createElement('div');
         loadingDiv.className = 'loading-overlay';
@@ -583,7 +586,6 @@
         updateTitleScreenInfo();
     }
 
-    // モード開始（必ず通信確認を挟む）
     function startModeWithCheck(mode) {
         verifyConnectionAndProceed(
             () => { startMode(mode); },
@@ -760,13 +762,11 @@
         currentMode = null;
     }
 
-    // ページロード時の初期通信確認 (タイトル表示の前に)
+    // ページロード時
     window.onload = function() {
         verifyConnectionAndProceed(
             () => {
-                // 成功: タイトル有効化、各種ボタンに通信確認付きハンドラ設定
                 updateTitleScreenInfo();
-                // 各ボタンに通信確認を挟むよう再定義
                 document.getElementById('startNewBtn').onclick = () => startModeWithCheck('new');
                 document.getElementById('continueBtn').onclick = () => startModeWithCheck('continue');
                 document.getElementById('mistakeOnlyBtn').onclick = () => startModeWithCheck('mistake');
@@ -776,7 +776,6 @@
                 document.getElementById('modalBtn').onclick = () => closeModalAndNext();
             },
             () => {
-                // 通信失敗: タイトル画面にエラー表示＆ボタンを無効化
                 document.getElementById('titleScreen').innerHTML = `<h1>⚠️ 通信エラー</h1><div class="info-note">ネットワーク接続を確認して、ページを再読み込みしてください。</div><button onclick="location.reload()" style="margin-top:20px;padding:12px 24px;border-radius:40px;border:none;background:#0f172a;color:white;">再読み込み</button>`;
                 document.querySelectorAll('.menu-btn').forEach(btn => btn.disabled = true);
             }

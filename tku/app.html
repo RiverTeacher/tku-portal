@@ -1,786 +1,332 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="robots" content="noindex">
-    <title>モダン英単語クイズ | 学習記録機能</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex">
+<title>TKU英単語</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;700;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0c10;
+    --fg: #e8eaed;
+    --muted: #6b7280;
+    --accent: #22d3a7;
+    --accent-glow: rgba(34,211,167,0.35);
+    --card-bg: rgba(14,16,22,0.92);
+    --border: #23272f;
+    --error: #f43f5e;
+  }
 
-        body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-            background: #f1f5f9;
-            min-height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            padding: 24px;
-        }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
 
-        .container {
-            background: #ffffff;
-            border-radius: 32px;
-            padding: 32px;
-            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.03), 0 2px 6px rgba(0, 0, 0, 0.05);
-            max-width: 720px;
-            width: 100%;
-            border: 1px solid #eef2f6;
-            transition: all 0.2s;
-        }
+  body {
+    font-family: 'Noto Sans JP', sans-serif;
+    background: var(--bg);
+    color: var(--fg);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
 
-        h1 {
-            text-align: center;
-            color: #0f172a;
-            margin-bottom: 28px;
-            font-size: 1.9rem;
-            font-weight: 700;
-            letter-spacing: -0.3px;
-        }
+  /* 背景アニメーション */
+  #bg-canvas {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    z-index: 0;
+    pointer-events: none;
+  }
 
-        /* タイトル画面 / メニュー */
-        .title-screen {
-            text-align: center;
-        }
-        .menu-buttons {
-            display: flex;
-            flex-direction: column;
-            gap: 16px;
-            margin: 32px 0 24px;
-        }
-        .menu-btn {
-            background: #f8fafc;
-            border: 1px solid #e2e8f0;
-            padding: 16px 20px;
-            border-radius: 60px;
-            font-size: 1.05rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s;
-            color: #0f172a;
-            text-align: center;
-        }
-        .menu-btn.primary {
-            background: #0f172a;
-            color: white;
-            border: none;
-        }
-        .menu-btn.primary:hover {
-            background: #1e293b;
-            transform: translateY(-2px);
-        }
-        .menu-btn.secondary {
-            background: white;
-            border: 1px solid #cbd5e1;
-        }
-        .menu-btn.secondary:hover {
-            background: #f1f5f9;
-            border-color: #94a3b8;
-        }
-        .menu-btn.danger {
-            color: #dc2626;
-            border-color: #fee2e2;
-            background: #fff5f5;
-        }
-        .menu-btn.danger:hover {
-            background: #fee2e2;
-            border-color: #fecaca;
-        }
-        .menu-btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-            transform: none;
-        }
-        .info-note {
-            font-size: 0.8rem;
-            color: #64748b;
-            margin-top: 20px;
-            background: #f8fafc;
-            padding: 12px;
-            border-radius: 20px;
-        }
-        .badge-locked {
-            font-size: 0.7rem;
-            background: #e2e8f0;
-            padding: 4px 10px;
-            border-radius: 40px;
-            margin-left: 10px;
-            color: #475569;
-        }
+  .glow-orb {
+    position: fixed;
+    border-radius: 50%;
+    filter: blur(100px);
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0;
+    transition: opacity 1.5s ease, background 0.8s ease;
+  }
+  .glow-orb.active { opacity: 1; }
+  .glow-orb--1 { width: 500px; height: 500px; top: -15%; left: -10%; background: rgba(34,211,167,0.06); }
+  .glow-orb--2 { width: 400px; height: 400px; bottom: -10%; right: -5%; background: rgba(34,211,167,0.04); }
+  .glow-orb--error-1 { background: rgba(244,63,94,0.07) !important; }
+  .glow-orb--error-2 { background: rgba(244,63,94,0.04) !important; }
 
-        /* ローディングオーバーレイ */
-        .loading-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.6);
-            backdrop-filter: blur(3px);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 2000;
-            flex-direction: column;
-            gap: 16px;
-            color: white;
-            font-weight: 500;
-        }
-        .loading-spinner {
-            width: 48px;
-            height: 48px;
-            border: 4px solid rgba(255,255,255,0.3);
-            border-top: 4px solid white;
-            border-radius: 50%;
-            animation: spin 0.8s linear infinite;
-        }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+  /* 成功演出 */
+  .success-flash {
+    position: fixed;
+    inset: 0;
+    z-index: 5;
+    background: radial-gradient(circle at center, var(--accent-glow) 0%, transparent 70%);
+    opacity: 0;
+    pointer-events: none;
+  }
+  .success-flash.fire { animation: flash-in 0.8s cubic-bezier(0.22,1,0.36,1) forwards; }
+  @keyframes flash-in {
+    0%   { opacity: 0; transform: scale(0.5); }
+    30%  { opacity: 0.6; transform: scale(1.1); }
+    100% { opacity: 0; transform: scale(2.5); }
+  }
 
-        .progress-section {
-            margin-bottom: 24px;
-        }
-        .progress-bar {
-            width: 100%;
-            height: 6px;
-            background: #e2e8f0;
-            border-radius: 10px;
-            overflow: hidden;
-        }
-        .progress-fill {
-            height: 100%;
-            background: #3b82f6;
-            border-radius: 10px;
-            transition: width 0.25s ease;
-        }
-        .progress-text {
-            text-align: center;
-            color: #475569;
-            margin-top: 10px;
-            font-size: 0.85rem;
-            font-weight: 500;
-        }
+  .screen {
+    position: relative;
+    z-index: 2;
+    text-align: center;
+    width: 92%;
+    max-width: 380px;
+  }
+  .screen.anim-in { animation: screen-in 0.5s cubic-bezier(0.22,1,0.36,1) forwards; }
+  .screen.anim-shake { animation: screen-in 0.3s ease forwards, shake 0.45s ease 0.05s; }
+  @keyframes screen-in {
+    from { opacity: 0; transform: scale(0.93) translateY(8px); }
+    to   { opacity: 1; transform: scale(1) translateY(0); }
+  }
+  @keyframes shake {
+    0%, 100% { transform: translateX(0) scale(1); }
+    15%, 45%, 75% { transform: translateX(-5px); }
+    30%, 60% { transform: translateX(5px); }
+  }
 
-        .question-box {
-            background: #f8fafc;
-            border-radius: 24px;
-            padding: 32px 24px;
-            margin-bottom: 32px;
-            text-align: center;
-            border: 1px solid #eef2ff;
-        }
-        .question-text {
-            font-size: 1.35rem;
-            line-height: 1.6;
-            color: #1e293b;
-        }
-        .blank {
-            display: inline-block;
-            min-width: 110px;
-            border-bottom: 3px solid #3b82f6;
-            margin: 0 4px;
-            color: #2563eb;
-            font-weight: 600;
-            background: #eff6ff;
-            padding: 0 6px;
-            border-radius: 8px;
-        }
-        .options {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 14px;
-        }
-        .option-btn {
-            padding: 16px 12px;
-            border: 1.5px solid #e2e8f0;
-            background: white;
-            border-radius: 20px;
-            cursor: pointer;
-            font-size: 1rem;
-            font-weight: 500;
-            transition: all 0.2s;
-            color: #1e293b;
-        }
-        .option-btn:hover {
-            background: #f1f5f9;
-            border-color: #cbd5e1;
-        }
-        .option-btn.correct {
-            background: #10b981;
-            border-color: #10b981;
-            color: white;
-        }
-        .option-btn.wrong {
-            background: #ef4444;
-            border-color: #ef4444;
-            color: white;
-        }
-        .option-btn:disabled {
-            cursor: default;
-            opacity: 0.9;
-        }
+  .card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 36px 28px 28px;
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    box-shadow: 0 8px 40px rgba(0,0,0,0.4);
+  }
 
-        .modal-overlay {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.5);
-            backdrop-filter: blur(4px);
-            z-index: 1000;
-            justify-content: center;
-            align-items: center;
-            padding: 20px;
-        }
-        .modal-overlay.active { display: flex; }
-        .modal-content {
-            background: white;
-            border-radius: 32px;
-            padding: 28px;
-            max-width: 480px;
-            width: 100%;
-            box-shadow: 0 20px 35px -12px rgba(0,0,0,0.2);
-            animation: modalPop 0.2s ease;
-        }
-        @keyframes modalPop {
-            from { opacity: 0; transform: scale(0.96);}
-            to { opacity: 1; transform: scale(1);}
-        }
-        .modal-header { text-align: center; margin-bottom: 20px; }
-        .modal-icon { font-size: 44px; margin-bottom: 8px; }
-        .modal-title { font-size: 1.6rem; font-weight: 700; }
-        .modal-title.incorrect { color: #dc2626; }
-        .modal-title.correct { color: #10b981; }
-        .answer-section {
-            background: #f8fafc;
-            border-radius: 20px;
-            padding: 20px;
-            margin-bottom: 20px;
-            text-align: center;
-        }
-        .answer-word { font-size: 1.8rem; font-weight: 700; color: #0f172a; margin-bottom: 8px; }
-        .answer-meaning { font-size: 1rem; color: #475569; }
-        .detail-grid { display: flex; flex-direction: column; gap: 12px; margin-bottom: 24px; }
-        .detail-item {
-            background: #ffffff;
-            border-radius: 18px;
-            padding: 14px 16px;
-            border-left: 4px solid #3b82f6;
-            border: 1px solid #edf2f7;
-        }
-        .detail-label { font-size: 0.7rem; text-transform: uppercase; color: #64748b; margin-bottom: 6px; }
-        .detail-value { font-size: 0.95rem; color: #0f172a; }
-        .modal-btn {
-            width: 100%;
-            padding: 14px;
-            background: #0f172a;
-            color: white;
-            border: none;
-            border-radius: 40px;
-            font-size: 1rem;
-            font-weight: 600;
-            cursor: pointer;
-        }
-        .modal-btn:hover { background: #1e293b; }
+  .spinner-wrap { position: relative; width: 64px; height: 64px; margin: 0 auto 20px; }
+  .spinner-ring {
+    position: absolute;
+    inset: 0;
+    border: 2px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 1s cubic-bezier(0.4,0,0.2,1) infinite;
+  }
+  .spinner-ring--inner {
+    inset: 8px;
+    border-top-color: transparent;
+    border-right-color: var(--accent);
+    animation-direction: reverse;
+    animation-duration: 0.7s;
+  }
+  .spinner-core {
+    position: absolute;
+    top: 50%; left: 50%;
+    width: 7px; height: 7px;
+    margin: -3.5px 0 0 -3.5px;
+    background: var(--accent);
+    border-radius: 50%;
+    box-shadow: 0 0 12px var(--accent-glow);
+  }
 
-        .success-overlay {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            pointer-events: none;
-            z-index: 999;
-        }
-        .success-overlay.active { display: block; }
-        .confetti {
-            position: absolute;
-            width: 8px;
-            height: 8px;
-            background: #3b82f6;
-            animation: fall 2s ease-out forwards;
-        }
-        @keyframes fall {
-            0% { transform: translateY(-20px) rotate(0deg); opacity: 1; }
-            100% { transform: translateY(100vh) rotate(360deg); opacity: 0; }
-        }
+  @keyframes spin { to { transform: rotate(360deg); } }
 
-        .final-result { text-align: center; display: none; }
-        .score-display {
-            background: #f8fafc;
-            border-radius: 32px;
-            padding: 32px;
-            margin: 20px 0;
-        }
-        .score { font-size: 3.8rem; font-weight: 800; color: #0f172a; }
-        .result-message { font-size: 1.2rem; margin: 20px 0; background: #f1f5f9; padding: 16px; border-radius: 28px; }
-        .restart-btn {
-            padding: 14px 28px;
-            background: #0f172a;
-            color: white;
-            border: none;
-            border-radius: 50px;
-            font-size: 1rem;
-            font-weight: 600;
-            cursor: pointer;
-        }
-        .save-status {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 18px;
-            background: #f9f9fc;
-            padding: 8px 16px;
-            border-radius: 60px;
-            font-size: 0.75rem;
-        }
-        .back-home {
-            margin-top: 20px;
-            text-align: center;
-        }
-        .back-home button {
-            background: none;
-            border: none;
-            color: #3b82f6;
-            cursor: pointer;
-            font-size: 0.85rem;
-            text-decoration: underline;
-        }
-        @media (max-width: 550px) {
-            .container { padding: 20px; }
-            .options { grid-template-columns: 1fr; }
-        }
-    </style>
+  .load-title { font-size: 1.05rem; font-weight: 700; margin-bottom: 4px; }
+  .load-status { font-size: 0.8rem; color: var(--muted); margin-bottom: 18px; min-height: 1.4em; }
+  .load-status.ok { color: var(--accent); }
+
+  .progress-track { width: 100%; height: 3px; background: rgba(255,255,255,0.06); border-radius: 3px; overflow: hidden; margin-bottom: 12px; }
+  .progress-bar { height: 100%; width: 30%; background: var(--accent); border-radius: 3px; }
+  .progress-bar.running { animation: indeterminate 1.2s ease-in-out infinite; }
+  .progress-bar.done { width: 100%; transition: width 0.4s ease; }
+  @keyframes indeterminate {
+    0%   { transform: translateX(-120%); }
+    100% { transform: translateX(500%); }
+  }
+
+  .load-timer { font-size: 0.72rem; color: var(--muted); opacity: 0.6; }
+
+  .success-check {
+    position: absolute;
+    top: 50%; left: 50%;
+    width: 32px; height: 32px;
+    margin: -16px 0 0 -16px;
+    opacity: 0;
+  }
+  .success-check.pop { animation: check-pop 0.45s cubic-bezier(0.22,1,0.36,1) forwards; }
+  @keyframes check-pop {
+    0%   { opacity: 0; transform: scale(0.2); }
+    100% { opacity: 1; transform: scale(1); }
+  }
+  .success-check svg { width: 32px; height: 32px; stroke: var(--accent); fill: none; stroke-width: 3; }
+
+  .error-title { color: var(--error); font-weight: 700; margin-bottom: 8px; }
+  .error-msg { font-size: 0.82rem; color: var(--muted); margin-bottom: 24px; }
+  .retry-btn {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--fg);
+    padding: 10px 34px;
+    border-radius: 9px;
+    cursor: pointer;
+    transition: all 0.3s;
+  }
+  .retry-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+  #content-frame {
+    display: none;
+    position: fixed;
+    top: 0; left: 0;
+    width: 100vw; height: 100vh;
+    border: none;
+    z-index: 10;
+    opacity: 0;
+    transition: opacity 0.5s ease;
+  }
+  #content-frame.show { opacity: 1; }
+</style>
 </head>
 <body>
-<div class="success-overlay" id="successOverlay"></div>
 
-<div class="container" id="appRoot">
-    <div id="titleScreen" class="title-screen">
-        <h1>📘 英単語クイズ</h1>
-        <div class="menu-buttons">
-            <button class="menu-btn primary" id="startNewBtn">✨ 最初から始める</button>
-            <button class="menu-btn secondary" id="continueBtn">🔄 続きから再開</button>
-            <button class="menu-btn secondary" id="mistakeOnlyBtn">❌ 間違えた問題のみ</button>
-            <button class="menu-btn danger" id="deleteSaveBtn">🗑 セーブデータを削除</button>
-        </div>
-        <div class="info-note" id="infoNote">
-            💡 「続きから」は前回の進行状況を復元。<br>
-            🎯 「間違えた問題のみ」は全問完走後に解禁されます。
-        </div>
-    </div>
+<canvas id="bg-canvas"></canvas>
+<div class="glow-orb glow-orb--1" id="glow1"></div>
+<div class="glow-orb glow-orb--2" id="glow2"></div>
+<div class="success-flash" id="success-flash"></div>
 
-    <div id="quizScreen" style="display: none;">
-        <h1>📖 英単語クイズ</h1>
-        <div class="save-status">
-            <span>💾 自動保存中</span>
-            <button class="back-home" style="margin:0;"><button id="exitToTitleBtn" style="background:none;border:none;color:#3b82f6;">← タイトルへ</button></button>
-        </div>
-        <div class="progress-section">
-            <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
-            <div class="progress-text">問題 <span id="current">1</span> / <span id="total">46</span></div>
-        </div>
-        <div class="question-box"><div class="question-text" id="question"></div></div>
-        <div class="options" id="options"></div>
+<section id="status-screen" class="screen" style="display:none">
+  <div class="card">
+    <div class="spinner-wrap">
+      <div class="spinner-ring"></div>
+      <div class="spinner-ring spinner-ring--inner"></div>
+      <div class="spinner-core"></div>
+      <div class="success-check" id="success-check">
+        <svg viewBox="0 0 24 24"><polyline points="4 12 10 18 20 6"/></svg>
+      </div>
     </div>
+    <p class="load-title" id="load-title">しばらくお待ちください</p>
+    <p class="load-status" id="load-status">サーバーに接続しています...</p>
+    <div class="progress-track">
+      <div class="progress-bar running" id="progress-bar"></div>
+    </div>
+    <p class="load-timer" id="load-timer">0.0 秒</p>
+  </div>
+</section>
 
-    <div id="finalScreen" class="final-result">
-        <h2>🎉 クイズ完了！</h2>
-        <div class="score-display"><div class="score"><span id="correct-count">0</span> / <span id="total-count">0</span></div><div class="score-label">正解数</div></div>
-        <div class="result-message" id="resultMessage"></div>
-        <button class="restart-btn" id="finalHomeBtn">🏠 タイトルに戻る</button>
-    </div>
-</div>
+<section id="error-screen" class="screen" style="display:none">
+  <div class="card">
+    <p class="error-title">通信エラー</p>
+    <p class="error-msg" id="error-msg">接続できませんでした。</p>
+    <button class="retry-btn" id="retry-btn">再試行</button>
+  </div>
+</section>
 
-<div class="modal-overlay" id="modal">
-    <div class="modal-content">
-        <div class="modal-header"><div class="modal-icon" id="modalIcon">❌</div><div class="modal-title incorrect" id="modalTitle">不正解...</div></div>
-        <div class="answer-section"><div class="answer-word" id="modalWord"></div><div class="answer-meaning" id="modalMeaning"></div></div>
-        <div class="detail-grid"><div class="detail-item"><div class="detail-label">📘 英文例</div><div class="detail-value example" id="modalExample"></div></div><div class="detail-item"><div class="detail-label">🇯🇵 日本語訳</div><div class="detail-value" id="modalExampleJa"></div></div></div>
-        <button class="modal-btn" id="modalBtn">次の問題へ →</button>
-    </div>
-</div>
+<iframe id="content-frame" src="about:blank"></iframe>
 
 <script>
-    // ---------- 語彙データ (全46問) ----------
-    const vocabularyData = [
-        {"word": "merchandise", "meaning": "品物", "example": "The customer is examining some merchandise.", "example_ja": "The customer is examining some 品物."},
-        {"word": "groceries", "meaning": "食料品", "example": "A man is loading some groceries into a delivery van.", "example_ja": "A man is loading some 食料品 into a delivery van."},
-        {"word": "produce", "meaning": "農作物", "example": "He's removing some produce from the shelf.", "example_ja": "He's removing some 農作物 from the shelf."},
-        {"word": "vendor", "meaning": "露天商人、納入業者", "example": "A vendor is arranging some merchandise.", "example_ja": "A 露天商人 is arranging some merchandise."},
-        {"word": "pedestrian", "meaning": "通行人", "example": "Pedestrians are crossing the street.", "example_ja": "通行人s are crossing the street."},
-        {"word": "cashier", "meaning": "レジ係", "example": "The customer is paying the cashier.", "example_ja": "The customer is paying the レジ係."},
-        {"word": "equipment", "meaning": "装置", "example": "A man is putting away a piece of equipment.", "example_ja": "A man is putting away a piece of 装置."},
-        {"word": "stairs", "meaning": "階段", "example": "People are gathering near the stairs.", "example_ja": "People are gathering near the 階段."},
-        {"word": "railing", "meaning": "手すり", "example": "Some people are leaning on the railing of the stairs.", "example_ja": "Some people are leaning on the 手すり of the stairs."},
-        {"word": "stool", "meaning": "椅子", "example": "The man is lifting a stool.", "example_ja": "The man is lifting a 椅子."},
-        {"word": "drawer", "meaning": "引き出し", "example": "One of the women is pointing at a drawer.", "example_ja": "One of the women is pointing at a 引き出し."},
-        {"word": "luggage", "meaning": "荷物", "example": "He's stacking some luggage on a cart.", "example_ja": "He's stacking some 荷物 on a cart."},
-        {"word": "instrument", "meaning": "器具、楽器", "example": "The repairman is adjusting an instrument.", "example_ja": "The repairman is adjusting an 器具."},
-        {"word": "vehicle", "meaning": "車両、伝達手段", "example": "She's unloading some produce from a vehicle.", "example_ja": "She's unloading some produce from a 車両."},
-        {"word": "ladder", "meaning": "はしご", "example": "The carpenter is resting his hand on a rung of the ladder.", "example_ja": "The carpenter is resting his hand on a rung of the はしご."},
-        {"word": "construction", "meaning": "建設", "example": "A vehicle is parked on the construction site.", "example_ja": "A vehicle is parked on the 建設 site."},
-        {"word": "facility", "meaning": "施設", "example": "The facility is under construction.", "example_ja": "The 施設 is under construction."},
-        {"word": "traffic", "meaning": "通行、交通量", "example": "There is much traffic in the facility.", "example_ja": "There is much 通行 in the facility."},
-        {"word": "bin", "meaning": "容器、ゴミ箱", "example": "All the bins have been sealed.", "example_ja": "All the 容器s have been sealed."},
-        {"word": "sink", "meaning": "流し台", "example": "A bin is leaning against the sink.", "example_ja": "A bin is leaning against the 流し台."},
-        {"word": "stroll", "meaning": "散策", "example": "We took a stroll around the facility after lunch.", "example_ja": "We took a 散策 around the facility after lunch."},
-        {"word": "awning", "meaning": "日よけ", "example": "Some produce is laid out under the awning.", "example_ja": "Some produce is laid out under the 日よけ."},
-        {"word": "fountain", "meaning": "噴水", "example": "The fountain is decorated with some lights.", "example_ja": "The 噴水 is decorated with some lights."},
-        {"word": "pillar", "meaning": "柱", "example": "There is a pillar at the entrance of the driveway.", "example_ja": "There is a 柱 at the entrance of the driveway."},
-        {"word": "appliance", "meaning": "電気器具", "example": "An electric appliance has been unplugged.", "example_ja": "An electric 電気器具 has been unplugged."},
-        {"word": "utensil", "meaning": "調理器具", "example": "Polished kitchen utensils are hung above the sink.", "example_ja": "Polished kitchen 調理器具s are hung above the sink."},
-        {"word": "lid", "meaning": "ふた", "example": "The lid of the copy machine has been left open.", "example_ja": "The ふた of the copy machine has been left open."},
-        {"word": "beverage", "meaning": "飲み物", "example": "He's pouring the beverage into the glass.", "example_ja": "He's pouring the 飲み物 into the glass."},
-        {"word": "dock", "meaning": "埠頭、波止場、ドック", "example": "Some boats are tied to the dock.", "example_ja": "Some boats are tied to the 埠頭."},
-        {"word": "pier", "meaning": "突堤、桟橋", "example": "Waves are splashing on the side of the pier.", "example_ja": "Waves are splashing on the side of the 突堤."},
-        {"word": "across from", "meaning": "…の向かいに", "example": "A piece of equipment is positioned across from the ladder.", "example_ja": "A piece of equipment is positioned …の向かいに the ladder."},
-        {"word": "opposite", "meaning": "反対の、…の反対に", "example": "Some vehicles are driving in opposite directions.", "example_ja": "Some vehicles are driving in 反対の directions."},
-        {"word": "in a row", "meaning": "横一列になって", "example": "Some lids are arranged in a row.", "example_ja": "Some lids are arranged 横一列になって."},
-        {"word": "side by side", "meaning": "横に並んで", "example": "The appliances are on display side by side.", "example_ja": "The appliances are on display 横に並んで."},
-        {"word": "crowded", "meaning": "混雑した", "example": "The shelter is crowded with people.", "example_ja": "The shelter is 混雑した with people."},
-        {"word": "occupied", "meaning": "使用中の", "example": "Some of the stools are occupied.", "example_ja": "Some of the stools are 使用中の."},
-        {"word": "reflect", "meaning": "映す、熟考する", "example": "Pillars are reflected in the window.", "example_ja": "Pillars are 映された in the window."},
-        {"word": "shallow", "meaning": "浅い", "example": "A high-rise building is reflected in the shallow water.", "example_ja": "A high-rise building is reflected in the 浅い water."},
-        {"word": "parallel", "meaning": "平行の", "example": "A vehicle is parked parallel to the curb.", "example_ja": "A vehicle is parked 平行に to the curb."},
-        {"word": "overlook", "meaning": "を見渡す、監督する、を見逃す", "example": "The balcony overlooks the pier.", "example_ja": "The balcony 見渡す the pier."},
-        {"word": "paved", "meaning": "舗装された", "example": "Pedestrians are walking on the paved road.", "example_ja": "Pedestrians are walking on the 舗装された road."},
-        {"word": "scattered", "meaning": "散らばった", "example": "Some utensils are scattered on the stove.", "example_ja": "Some utensils are 散らばった on the stove."},
-        {"word": "surround", "meaning": "…を囲む", "example": "The fountain is surrounded by a brick wall.", "example_ja": "The fountain is 囲まれた by a brick wall."},
-        {"word": "tow", "meaning": "けん引", "example": "A ship is being towed into dock.", "example_ja": "A ship is being けん引された into dock."},
-        {"word": "winding", "meaning": "曲がりくねった", "example": "The winding alley is being paved.", "example_ja": "The 曲がりくねった alley is being paved."}
-    ];
+  const STATUS_URL = 'https://riverteacher.gitlab.io/yk-english-vocabulary-test/takayarpg2/status.html';
+  const TARGET_APP = './title.html';
+  const WAIT_MS    = 1000;
 
-    // ---------- グローバル ----------
-    let currentMode = null;
-    let currentQuestions = [];
-    let currentIndex = 0;
-    let totalCorrect = 0;
-    let answeredLock = false;
-    let mistakeWordsSet = new Set();
-    const STATUS_URL = 'https://riverteacher.gitlab.io/yk-english-vocabulary-test/takayarpg2/status.html';
+  const statusScreen = document.getElementById('status-screen');
+  const loadTitle    = document.getElementById('load-title');
+  const loadStatus   = document.getElementById('load-status');
+  const progressBar  = document.getElementById('progress-bar');
+  const loadTimer    = document.getElementById('load-timer');
+  const successCheck = document.getElementById('success-check');
+  const errorScreen  = document.getElementById('error-screen');
+  const errorMsg     = document.getElementById('error-msg');
+  const retryBtn     = document.getElementById('retry-btn');
+  const contentFrame = document.getElementById('content-frame');
+  const successFlash = document.getElementById('success-flash');
+  const glow1        = document.getElementById('glow1');
+  const glow2        = document.getElementById('glow2');
 
-    // Cookie操作
-    function setCookie(name, value, days = 30) {
-        const d = new Date(); d.setTime(d.getTime() + days*24*60*60*1000);
-        document.cookie = `${name}=${encodeURIComponent(JSON.stringify(value))}; expires=${d.toUTCString()}; path=/; SameSite=Lax`;
-    }
-    function getCookie(name) {
-        const match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
-        if(match) try { return JSON.parse(decodeURIComponent(match[2])); } catch(e){ return null; }
-        return null;
-    }
-    const SAVE_VERSION = 3;
-    function saveFullProgress() {
-        if(!currentQuestions.length) return;
-        const saveObj = {
-            version: SAVE_VERSION,
-            shuffledOrder: currentQuestions.map(q => q.word),
-            currentIdx: currentIndex,
-            correctCount: totalCorrect,
-            wrongWordsArray: Array.from(mistakeWordsSet),
-            completedOnce: window._completedOnce || false,
-            mode: currentMode
-        };
-        setCookie('vocab_quiz_master', saveObj);
-    }
-    function loadFullSave() {
-        const raw = getCookie('vocab_quiz_master');
-        if(!raw || raw.version !== SAVE_VERSION) return null;
-        const reconstructed = [];
-        for(let w of raw.shuffledOrder){
-            const found = vocabularyData.find(v=> v.word === w);
-            if(found) reconstructed.push(found);
-        }
-        if(reconstructed.length !== vocabularyData.length && raw.mode !== 'mistake') return null;
-        return {
-            questions: reconstructed,
-            currentIdx: raw.currentIdx,
-            correctCount: raw.correctCount,
-            wrongWordsSet: new Set(raw.wrongWordsArray || []),
-            completedOnce: raw.completedOnce || false,
-            mode: raw.mode
-        };
-    }
-    function clearSaveData() {
-        document.cookie = "vocab_quiz_master=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
-        mistakeWordsSet.clear();
-        window._completedOnce = false;
-        updateTitleScreenInfo();
-    }
+  let timerRAF = null;
+  let timerStart = 0;
 
-    // 通信確認関数 (タイムスタンプを付与)
-    async function checkNetworkStatus() {
-        return new Promise((resolve) => {
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 5000);
-            
-            // ★ URLにタイムスタンプを付与してキャッシュを回避
-            const timestamp = Date.now();
-            fetch(`${STATUS_URL}?t=${timestamp}`, { signal: controller.signal, cache: 'no-store' })
-                .then(res => res.text())
-                .then(text => {
-                    clearTimeout(timeoutId);
-                    resolve(text.trim() === 'allow');
-                })
-                .catch(() => {
-                    clearTimeout(timeoutId);
-                    resolve(false);
-                });
-        });
-    }
+  /* 背景描画 */
+  const canvas = document.getElementById('bg-canvas');
+  const ctx = canvas.getContext('2d');
+  let particles = [];
+  function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+  window.onresize = resize; resize();
+  for(let i=0; i<40; i++) particles.push({x:Math.random()*canvas.width, y:Math.random()*canvas.height, vx:(Math.random()-0.5)*0.3, vy:(Math.random()-0.5)*0.3, r:Math.random()*1+0.2});
+  function draw() {
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    ctx.fillStyle = 'rgba(34,211,167,0.2)';
+    particles.forEach(p => {
+      p.x+=p.vx; p.y+=p.vy;
+      if(p.x<0)p.x=canvas.width; if(p.x>canvas.width)p.x=0;
+      ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI*2); ctx.fill();
+    });
+    requestAnimationFrame(draw);
+  }
+  draw();
 
-    // ローディング表示＆通信確認
-    async function verifyConnectionAndProceed(onSuccess, onFail) {
-        const loadingDiv = document.createElement('div');
-        loadingDiv.className = 'loading-overlay';
-        loadingDiv.innerHTML = `<div class="loading-spinner"></div><div>通信を確認中...</div>`;
-        document.body.appendChild(loadingDiv);
-        const isOk = await checkNetworkStatus();
-        document.body.removeChild(loadingDiv);
-        if(isOk) {
-            if(onSuccess) onSuccess();
-        } else {
-            if(onFail) onFail();
-            else alert("通信エラーが発生しました。ネットワークを確認してください。");
-        }
-    }
+  function showOnly(target) {
+    [statusScreen, errorScreen].forEach(s => s.style.display = 'none');
+    target.style.display = '';
+    target.classList.remove('anim-in', 'anim-shake');
+    void target.offsetWidth; 
+    target.classList.add(target === errorScreen ? 'anim-shake' : 'anim-in');
+  }
 
-    function updateTitleScreenInfo() {
-        const saved = getCookie('vocab_quiz_master');
-        let completed = false;
-        if(saved && saved.version === SAVE_VERSION && saved.completedOnce === true) completed = true;
-        else if(window._completedOnce) completed = true;
-        const mistakeBtn = document.getElementById('mistakeOnlyBtn');
-        if(completed) {
-            mistakeBtn.disabled = false;
-            document.getElementById('infoNote').innerHTML = `✅ 「間違えた問題のみ」が解放されました！<br>💡 間違えた単語 ${mistakeWordsSet.size} 問を復習できます。`;
-        } else {
-            mistakeBtn.disabled = true;
-            document.getElementById('infoNote').innerHTML = `🔒 「間違えた問題のみ」は全ての問題を一度完走すると解放されます。<br>💡 「最初から」または「続きから」で全問正解を目指しましょう。`;
-        }
-    }
+  async function checkStatus() {
+    contentFrame.style.display = 'none';
+    contentFrame.classList.remove('show');
+    
+    successFlash.classList.remove('fire');
+    successCheck.classList.remove('pop');
+    loadStatus.classList.remove('ok');
+    progressBar.className = 'progress-bar running';
+    glow1.classList.remove('glow-orb--error-1');
+    glow2.classList.remove('glow-orb--error-2');
 
-    function registerCompletion() {
-        window._completedOnce = true;
-        const saveData = getCookie('vocab_quiz_master');
-        let wrongArr = [];
-        if(saveData && saveData.wrongWordsArray) wrongArr = saveData.wrongWordsArray;
-        else wrongArr = Array.from(mistakeWordsSet);
-        const finalSave = {
-            version: SAVE_VERSION,
-            shuffledOrder: vocabularyData.map(v=>v.word),
-            currentIdx: 0,
-            correctCount: 0,
-            wrongWordsArray: wrongArr,
-            completedOnce: true,
-            mode: null
-        };
-        setCookie('vocab_quiz_master', finalSave);
-        mistakeWordsSet = new Set(wrongArr);
-        updateTitleScreenInfo();
-    }
+    showOnly(statusScreen);
+    timerStart = performance.now();
+    (function tick(){ 
+      loadTimer.textContent = ((performance.now()-timerStart)/1000).toFixed(1)+' 秒'; 
+      timerRAF = requestAnimationFrame(tick); 
+    })();
 
-    function startModeWithCheck(mode) {
-        verifyConnectionAndProceed(
-            () => { startMode(mode); },
-            () => { alert("通信できません。インターネット接続を確認して再度お試しください。"); }
-        );
-    }
+    glow1.classList.add('active');
+    glow2.classList.add('active');
 
-    function startMode(mode) {
-        currentMode = mode;
-        if(mode === 'new') {
-            currentQuestions = shuffleArray([...vocabularyData]);
-            currentIndex = 0;
-            totalCorrect = 0;
-            answeredLock = false;
-            saveFullProgress();
-            showQuizUI();
-        } 
-        else if(mode === 'continue') {
-            const loaded = loadFullSave();
-            if(loaded && loaded.questions && loaded.questions.length > 0 && loaded.currentIdx < loaded.questions.length) {
-                currentQuestions = loaded.questions;
-                currentIndex = loaded.currentIdx;
-                totalCorrect = loaded.correctCount;
-                mistakeWordsSet = loaded.wrongWordsSet || new Set();
-                window._completedOnce = loaded.completedOnce || false;
-                answeredLock = false;
-                showQuizUI();
-            } else {
-                alert("続きのセーブデータがありません。最初から始めてください。");
-            }
-        }
-        else if(mode === 'mistake') {
-            const saved = getCookie('vocab_quiz_master');
-            if(!saved || !saved.completedOnce) {
-                alert("まだ「間違えた問題のみ」モードは解放されていません。全問完走してください。");
-                return;
-            }
-            let wrongWordsArr = saved.wrongWordsArray || [];
-            if(wrongWordsArr.length === 0) {
-                alert("間違えた問題がありません！完璧です！");
-                return;
-            }
-            const mistakeQuestions = [];
-            for(let w of wrongWordsArr){
-                const found = vocabularyData.find(v=> v.word === w);
-                if(found) mistakeQuestions.push(found);
-            }
-            if(mistakeQuestions.length === 0) { alert("該当なし"); return; }
-            currentQuestions = shuffleArray(mistakeQuestions);
-            currentIndex = 0;
-            totalCorrect = 0;
-            answeredLock = false;
-            showQuizUI();
-        }
-    }
+    try {
+      // ステータスチェック自体もキャッシュを避けるためにタイムスタンプを付与
+      const statusRes = await fetch(`${STATUS_URL}?t=${Date.now()}`, { cache: 'no-store' });
+      if (!statusRes.ok) throw new Error('サーバー応答なし (' + statusRes.status + ')');
+      
+      const text = await statusRes.text();
+      if (text.trim() === 'allow') {
+        loadTitle.textContent = '確認完了';
+        loadStatus.textContent = 'データを読み込んでいます...';
+        loadStatus.classList.add('ok');
+        progressBar.className = 'progress-bar done';
+        successCheck.classList.add('pop');
+        successFlash.classList.add('fire');
 
-    function shuffleArray(arr) {
-        for(let i=arr.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [arr[i],arr[j]]=[arr[j],arr[i]]; }
-        return arr;
-    }
-    function generateOptions(correctWord) {
-        let others = vocabularyData.map(v=>v.word).filter(w=> w !== correctWord);
-        let shuffledOthers = shuffleArray([...others]);
-        let opts = [correctWord];
-        for(let i=0;i<5 && i<shuffledOthers.length;i++) opts.push(shuffledOthers[i]);
-        return shuffleArray(opts);
-    }
-    function createConfetti() {
-        const overlay = document.getElementById('successOverlay');
-        overlay.innerHTML = '';
-        for(let i=0;i<60;i++){
-            const c = document.createElement('div');
-            c.classList.add('confetti');
-            c.style.left = Math.random()*100+'%';
-            c.style.backgroundColor = ['#3b82f6','#10b981','#f59e0b','#ef4444'][Math.floor(Math.random()*4)];
-            c.style.width = Math.random()*8+4+'px';
-            c.style.animationDelay = Math.random()*1.5+'s';
-            overlay.appendChild(c);
-        }
-        overlay.classList.add('active');
-        setTimeout(()=> overlay.classList.remove('active'),2000);
-    }
-    function showModal(isCorrect, question) {
-        const modal = document.getElementById('modal');
-        document.getElementById('modalIcon').innerHTML = isCorrect ? '✅' : '❌';
-        const titleEl = document.getElementById('modalTitle');
-        titleEl.innerText = isCorrect ? '正解！' : '不正解...';
-        titleEl.className = `modal-title ${isCorrect ? 'correct' : 'incorrect'}`;
-        document.getElementById('modalWord').innerText = question.word;
-        document.getElementById('modalMeaning').innerText = question.meaning;
-        document.getElementById('modalExample').innerText = question.example;
-        document.getElementById('modalExampleJa').innerText = question.example_ja;
-        modal.classList.add('active');
-    }
-    function closeModalAndNext() {
-        document.getElementById('modal').classList.remove('active');
-        currentIndex++;
-        if(currentIndex < currentQuestions.length) {
-            renderCurrentQuestion();
-            saveFullProgress();
-        } else {
-            if(currentMode === 'new' || currentMode === 'continue') {
-                registerCompletion();
-            }
-            showFinalResult();
-        }
-    }
-    function renderCurrentQuestion() {
-        answeredLock = false;
-        const q = currentQuestions[currentIndex];
-        let questionHtml = q.example_ja;
-        const meanings = q.meaning.split('、');
-        meanings.forEach(meaning => { questionHtml = questionHtml.replace(new RegExp(meaning,'g'), `<span class="blank">${meaning}</span>`); });
-        document.getElementById('question').innerHTML = questionHtml;
-        const percent = ((currentIndex) / currentQuestions.length)*100;
-        document.getElementById('progressFill').style.width = percent+'%';
-        document.getElementById('current').innerText = currentIndex+1;
-        document.getElementById('total').innerText = currentQuestions.length;
-        const opts = generateOptions(q.word);
-        const container = document.getElementById('options');
-        container.innerHTML = '';
-        opts.forEach(opt => {
-            const btn = document.createElement('button');
-            btn.className = 'option-btn';
-            btn.innerText = opt;
-            btn.onclick = () => checkAnswer(opt, q);
-            container.appendChild(btn);
-        });
-    }
-    function checkAnswer(selected, question) {
-        if(answeredLock) return;
-        answeredLock = true;
-        const isCorrect = selected === question.word;
-        const btns = document.querySelectorAll('.option-btn');
-        btns.forEach(btn => {
-            btn.disabled = true;
-            if(btn.innerText === question.word) btn.classList.add('correct');
-            else if(btn.innerText === selected && !isCorrect) btn.classList.add('wrong');
-        });
-        if(isCorrect) {
-            totalCorrect++;
-            createConfetti();
-        } else {
-            if(currentMode === 'new' || currentMode === 'continue') {
-                mistakeWordsSet.add(question.word);
-            }
-        }
-        setTimeout(()=> showModal(isCorrect, question), 450);
-    }
-    function showFinalResult() {
-        document.getElementById('quizScreen').style.display = 'none';
-        document.getElementById('finalScreen').style.display = 'block';
-        document.getElementById('correct-count').innerText = totalCorrect;
-        document.getElementById('total-count').innerText = currentQuestions.length;
-        const per = (totalCorrect/currentQuestions.length)*100;
-        let msg = '';
-        if(per===100) msg='🌟 パーフェクト！全問正解おめでとう！';
-        else if(per>=80) msg='🎉 素晴らしい！高得点です！';
-        else if(per>=60) msg='👍 よくできました！';
-        else msg='💪 また挑戦しましょう！';
-        document.getElementById('resultMessage').innerHTML = msg;
-    }
-    function showQuizUI() {
-        document.getElementById('titleScreen').style.display = 'none';
-        document.getElementById('quizScreen').style.display = 'block';
-        document.getElementById('finalScreen').style.display = 'none';
-        renderCurrentQuestion();
-    }
-    function backToTitle() {
-        document.getElementById('titleScreen').style.display = 'block';
-        document.getElementById('quizScreen').style.display = 'none';
-        document.getElementById('finalScreen').style.display = 'none';
-        updateTitleScreenInfo();
-        currentMode = null;
-    }
+        await new Promise(r => setTimeout(r, WAIT_MS));
+        cancelAnimationFrame(timerRAF);
 
-    // ページロード時
-    window.onload = function() {
-        verifyConnectionAndProceed(
-            () => {
-                updateTitleScreenInfo();
-                document.getElementById('startNewBtn').onclick = () => startModeWithCheck('new');
-                document.getElementById('continueBtn').onclick = () => startModeWithCheck('continue');
-                document.getElementById('mistakeOnlyBtn').onclick = () => startModeWithCheck('mistake');
-                document.getElementById('deleteSaveBtn').onclick = () => { if(confirm('すべての学習記録を削除しますか？')){ clearSaveData(); backToTitle(); } };
-                document.getElementById('exitToTitleBtn').onclick = () => backToTitle();
-                document.getElementById('finalHomeBtn').onclick = () => backToTitle();
-                document.getElementById('modalBtn').onclick = () => closeModalAndNext();
-            },
-            () => {
-                document.getElementById('titleScreen').innerHTML = `<h1>⚠️ 通信エラー</h1><div class="info-note">ネットワーク接続を確認して、ページを再読み込みしてください。</div><button onclick="location.reload()" style="margin-top:20px;padding:12px 24px;border-radius:40px;border:none;background:#0f172a;color:white;">再読み込み</button>`;
-                document.querySelectorAll('.menu-btn').forEach(btn => btn.disabled = true);
-            }
-        );
-    };
+        // ★ iframeのsrcにタイムスタンプを付与
+        const timestamp = Date.now();
+        contentFrame.src = `${TARGET_APP}?t=${timestamp}`;
+        
+        contentFrame.style.display = 'block';
+        setTimeout(() => contentFrame.classList.add('show'), 50);
+        statusScreen.style.display = 'none';
+      } else {
+        throw new Error('アクセスが許可されていません');
+      }
+    } catch (err) {
+      cancelAnimationFrame(timerRAF);
+      glow1.classList.add('glow-orb--error-1');
+      glow2.classList.add('glow-orb--error-2');
+      errorMsg.textContent = err.message;
+      showOnly(errorScreen);
+    }
+  }
+
+  retryBtn.onclick = checkStatus;
+  window.onload = checkStatus;
 </script>
 </body>
 </html>
