@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex">
+<title>TKU英単語</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;700;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0c10;
+    --fg: #e8eaed;
+    --muted: #6b7280;
+    --accent: #22d3a7;
+    --accent-glow: rgba(34,211,167,0.35);
+    --card-bg: rgba(14,16,22,0.92);
+    --border: #23272f;
+    --error: #f43f5e;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Noto Sans JP', sans-serif;
+    background: var(--bg);
+    color: var(--fg);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+
+  /* 背景アニメーション */
+  #bg-canvas {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    z-index: 0;
+    pointer-events: none;
+  }
+
+  .glow-orb {
+    position: fixed;
+    border-radius: 50%;
+    filter: blur(100px);
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0;
+    transition: opacity 1.5s ease, background 0.8s ease;
+  }
+  .glow-orb.active { opacity: 1; }
+  .glow-orb--1 { width: 500px; height: 500px; top: -15%; left: -10%; background: rgba(34,211,167,0.06); }
+  .glow-orb--2 { width: 400px; height: 400px; bottom: -10%; right: -5%; background: rgba(34,211,167,0.04); }
+  .glow-orb--error-1 { background: rgba(244,63,94,0.07) !important; }
+  .glow-orb--error-2 { background: rgba(244,63,94,0.04) !important; }
+
+  /* 成功演出 */
+  .success-flash {
+    position: fixed;
+    inset: 0;
+    z-index: 5;
+    background: radial-gradient(circle at center, var(--accent-glow) 0%, transparent 70%);
+    opacity: 0;
+    pointer-events: none;
+  }
+  .success-flash.fire { animation: flash-in 0.8s cubic-bezier(0.22,1,0.36,1) forwards; }
+  @keyframes flash-in {
+    0%   { opacity: 0; transform: scale(0.5); }
+    30%  { opacity: 0.6; transform: scale(1.1); }
+    100% { opacity: 0; transform: scale(2.5); }
+  }
+
+  .screen {
+    position: relative;
+    z-index: 2;
+    text-align: center;
+    width: 92%;
+    max-width: 380px;
+  }
+  .screen.anim-in { animation: screen-in 0.5s cubic-bezier(0.22,1,0.36,1) forwards; }
+  .screen.anim-shake { animation: screen-in 0.3s ease forwards, shake 0.45s ease 0.05s; }
+  @keyframes screen-in {
+    from { opacity: 0; transform: scale(0.93) translateY(8px); }
+    to   { opacity: 1; transform: scale(1) translateY(0); }
+  }
+  @keyframes shake {
+    0%, 100% { transform: translateX(0) scale(1); }
+    15%, 45%, 75% { transform: translateX(-5px); }
+    30%, 60% { transform: translateX(5px); }
+  }
+
+  .card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 36px 28px 28px;
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    box-shadow: 0 8px 40px rgba(0,0,0,0.4);
+  }
+
+  .spinner-wrap { position: relative; width: 64px; height: 64px; margin: 0 auto 20px; }
+  .spinner-ring {
+    position: absolute;
+    inset: 0;
+    border: 2px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 1s cubic-bezier(0.4,0,0.2,1) infinite;
+  }
+  .spinner-ring--inner {
+    inset: 8px;
+    border-top-color: transparent;
+    border-right-color: var(--accent);
+    animation-direction: reverse;
+    animation-duration: 0.7s;
+  }
+  .spinner-core {
+    position: absolute;
+    top: 50%; left: 50%;
+    width: 7px; height: 7px;
+    margin: -3.5px 0 0 -3.5px;
+    background: var(--accent);
+    border-radius: 50%;
+    box-shadow: 0 0 12px var(--accent-glow);
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .load-title { font-size: 1.05rem; font-weight: 700; margin-bottom: 4px; }
+  .load-status { font-size: 0.8rem; color: var(--muted); margin-bottom: 18px; min-height: 1.4em; }
+  .load-status.ok { color: var(--accent); }
+
+  .progress-track { width: 100%; height: 3px; background: rgba(255,255,255,0.06); border-radius: 3px; overflow: hidden; margin-bottom: 12px; }
+  .progress-bar { height: 100%; width: 30%; background: var(--accent); border-radius: 3px; }
+  .progress-bar.running { animation: indeterminate 1.2s ease-in-out infinite; }
+  .progress-bar.done { width: 100%; transition: width 0.4s ease; }
+  @keyframes indeterminate {
+    0%   { transform: translateX(-120%); }
+    100% { transform: translateX(500%); }
+  }
+
+  .load-timer { font-size: 0.72rem; color: var(--muted); opacity: 0.6; }
+
+  .success-check {
+    position: absolute;
+    top: 50%; left: 50%;
+    width: 32px; height: 32px;
+    margin: -16px 0 0 -16px;
+    opacity: 0;
+  }
+  .success-check.pop { animation: check-pop 0.45s cubic-bezier(0.22,1,0.36,1) forwards; }
+  @keyframes check-pop {
+    0%   { opacity: 0; transform: scale(0.2); }
+    100% { opacity: 1; transform: scale(1); }
+  }
+  .success-check svg { width: 32px; height: 32px; stroke: var(--accent); fill: none; stroke-width: 3; }
+
+  .error-title { color: var(--error); font-weight: 700; margin-bottom: 8px; }
+  .error-msg { font-size: 0.82rem; color: var(--muted); margin-bottom: 24px; }
+  .retry-btn {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--fg);
+    padding: 10px 34px;
+    border-radius: 9px;
+    cursor: pointer;
+    transition: all 0.3s;
+  }
+  .retry-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+  #content-frame {
+    display: none;
+    position: fixed;
+    top: 0; left: 0;
+    width: 100vw; height: 100vh;
+    border: none;
+    z-index: 10;
+    opacity: 0;
+    transition: opacity 0.5s ease;
+  }
+  #content-frame.show { opacity: 1; }
+</style>
+</head>
+<body>
+
+<canvas id="bg-canvas"></canvas>
+<div class="glow-orb glow-orb--1" id="glow1"></div>
+<div class="glow-orb glow-orb--2" id="glow2"></div>
+<div class="success-flash" id="success-flash"></div>
+
+<section id="status-screen" class="screen" style="display:none">
+  <div class="card">
+    <div class="spinner-wrap">
+      <div class="spinner-ring"></div>
+      <div class="spinner-ring spinner-ring--inner"></div>
+      <div class="spinner-core"></div>
+      <div class="success-check" id="success-check">
+        <svg viewBox="0 0 24 24"><polyline points="4 12 10 18 20 6"/></svg>
+      </div>
+    </div>
+    <p class="load-title" id="load-title">しばらくお待ちください</p>
+    <p class="load-status" id="load-status">サーバーに接続しています...</p>
+    <div class="progress-track">
+      <div class="progress-bar running" id="progress-bar"></div>
+    </div>
+    <p class="load-timer" id="load-timer">0.0 秒</p>
+  </div>
+</section>
+
+<section id="error-screen" class="screen" style="display:none">
+  <div class="card">
+    <p class="error-title">通信エラー</p>
+    <p class="error-msg" id="error-msg">接続できませんでした。</p>
+    <button class="retry-btn" id="retry-btn">再試行</button>
+  </div>
+</section>
+
+<iframe id="content-frame" src="about:blank"></iframe>
+
+<script>
+  // ★ ここを相対パスに変更しました
+  const STATUS_URL = 'https://riverteacher.gitlab.io/yk-english-vocabulary-test/takayarpg2/status.html';
+  const TARGET_APP = './title.html'; // 相対パス
+  const WAIT_MS    = 1000;
+
+  const statusScreen = document.getElementById('status-screen');
+  const loadTitle    = document.getElementById('load-title');
+  const loadStatus   = document.getElementById('load-status');
+  const progressBar  = document.getElementById('progress-bar');
+  const loadTimer    = document.getElementById('load-timer');
+  const successCheck = document.getElementById('success-check');
+  const errorScreen  = document.getElementById('error-screen');
+  const errorMsg     = document.getElementById('error-msg');
+  const retryBtn     = document.getElementById('retry-btn');
+  const contentFrame = document.getElementById('content-frame');
+  const successFlash = document.getElementById('success-flash');
+  const glow1        = document.getElementById('glow1');
+  const glow2        = document.getElementById('glow2');
+
+  let timerRAF = null;
+  let timerStart = 0;
+
+  /* 背景描画 */
+  const canvas = document.getElementById('bg-canvas');
+  const ctx = canvas.getContext('2d');
+  let particles = [];
+  function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+  window.onresize = resize; resize();
+  for(let i=0; i<40; i++) particles.push({x:Math.random()*canvas.width, y:Math.random()*canvas.height, vx:(Math.random()-0.5)*0.3, vy:(Math.random()-0.5)*0.3, r:Math.random()*1+0.2});
+  function draw() {
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    ctx.fillStyle = 'rgba(34,211,167,0.2)';
+    particles.forEach(p => {
+      p.x+=p.vx; p.y+=p.vy;
+      if(p.x<0)p.x=canvas.width; if(p.x>canvas.width)p.x=0;
+      ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI*2); ctx.fill();
+    });
+    requestAnimationFrame(draw);
+  }
+  draw();
+
+  function showOnly(target) {
+    [statusScreen, errorScreen].forEach(s => s.style.display = 'none');
+    target.style.display = '';
+    target.classList.remove('anim-in', 'anim-shake');
+    void target.offsetWidth; 
+    target.classList.add(target === errorScreen ? 'anim-shake' : 'anim-in');
+  }
+
+  async function checkStatus() {
+    contentFrame.style.display = 'none';
+    contentFrame.classList.remove('show');
+    
+    // UIリセット
+    successFlash.classList.remove('fire');
+    successCheck.classList.remove('pop');
+    loadStatus.classList.remove('ok');
+    progressBar.className = 'progress-bar running';
+    glow1.classList.remove('glow-orb--error-1');
+    glow2.classList.remove('glow-orb--error-2');
+
+    showOnly(statusScreen);
+    timerStart = performance.now();
+    (function tick(){ 
+      loadTimer.textContent = ((performance.now()-timerStart)/1000).toFixed(1)+' 秒'; 
+      timerRAF = requestAnimationFrame(tick); 
+    })();
+
+    glow1.classList.add('active');
+    glow2.classList.add('active');
+
+    try {
+      const res = await fetch(STATUS_URL, { cache: 'no-store' });
+      if (!res.ok) throw new Error('サーバー応答なし (' + res.status + ')');
+      
+      const text = await res.text();
+      if (text.trim() === 'allow') {
+        loadTitle.textContent = '確認完了';
+        loadStatus.textContent = 'データを読み込んでいます...';
+        loadStatus.classList.add('ok');
+        progressBar.className = 'progress-bar done';
+        successCheck.classList.add('pop');
+        successFlash.classList.add('fire');
+
+        await new Promise(r => setTimeout(r, WAIT_MS));
+        cancelAnimationFrame(timerRAF);
+
+        // 相対パスの app.html を iframe にセット
+        contentFrame.src = TARGET_APP;
+        contentFrame.style.display = 'block';
+        setTimeout(() => contentFrame.classList.add('show'), 50);
+        statusScreen.style.display = 'none';
+      } else {
+        throw new Error('アクセスが許可されていません');
+      }
+    } catch (err) {
+      cancelAnimationFrame(timerRAF);
+      glow1.classList.add('glow-orb--error-1');
+      glow2.classList.add('glow-orb--error-2');
+      errorMsg.textContent = err.message;
+      showOnly(errorScreen);
+    }
+  }
+
+  retryBtn.onclick = checkStatus;
+  window.onload = checkStatus;
+</script>
+</body>
+</html>

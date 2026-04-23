@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>アプリを追加</title>
+    <link rel="manifest" href="manifest.json?v=20260314">
+    <style>
+        :root {
+            --primary-color: #007AFF;
+            --error-color: #FF3B30;
+        }
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            background: #f4f6f9;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            overflow: hidden;
+        }
+
+        /* アプリ表示用フレーム */
+        #app-frame {
+            display: none;
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            border: none;
+            z-index: 100;
+            background: #fff;
+        }
+
+        /* 共通コンテナ */
+        .overlay-container {
+            display: flex;
+            width: 100%;
+            height: 100%;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            box-sizing: border-box;
+            background: #fff;
+            position: fixed;
+            top: 0; left: 0;
+            z-index: 50;
+        }
+
+        .card {
+            background: #f8f9fa;
+            padding: 30px;
+            border-radius: 25px;
+            text-align: center;
+            max-width: 500px;
+            width: 100%;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        }
+
+        /* インストールガイド用スタイル */
+        #install-guide .card {
+            border: 2px dashed var(--primary-color);
+        }
+
+        /* エラー表示用スタイル */
+        #error-display {
+            display: none;
+            z-index: 200;
+        }
+        #error-display .card {
+            border: 2px solid var(--error-color);
+        }
+        .error-icon {
+            font-size: 48px;
+            margin-bottom: 15px;
+        }
+
+        h1 { font-size: 1.8rem; margin: 0 0 10px; color: #000; }
+        h2 { font-size: 1.2rem; color: var(--primary-color); margin: 0 0 20px; }
+        .error-text { font-size: 1.1rem; color: #333; line-height: 1.6; white-space: pre-wrap; }
+        
+        .guide-steps {
+            font-size: 0.9rem; color: #666; text-align: left;
+            background: #fff; padding: 15px 20px; border-radius: 10px;
+            border: 1px solid #ccc; line-height: 1.8; margin: 15px 0;
+        }
+
+        /* ローディングアニメーション */
+        #loading-screen {
+            display: none;
+            z-index: 150;
+        }
+        .spinner {
+            width: 40px; height: 40px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid var(--primary-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+
+    <!-- アプリ本体 -->
+    <iframe id="app-frame" allow="autoplay; fullscreen; clipboard-write"></iframe>
+
+    <!-- 接続チェック中 -->
+    <div id="loading-screen" class="overlay-container">
+        <div class="card">
+            <div class="spinner"></div>
+            <p>起動しています...</p>
+        </div>
+    </div>
+
+    <!-- エラー表示 -->
+    <div id="error-display" class="overlay-container">
+        <div class="card">
+            <div class="error-icon">⚠️</div>
+            <p class="error-text" id="error-message"></p>
+        </div>
+    </div>
+
+    <!-- インストール促進ガイド -->
+    <div id="install-guide" class="overlay-container">
+        <div class="card">
+            <h1>アプリを追加しましょう</h1>
+            <h2>⚠️ アプリ未登録</h2>
+            <p>このページを<b>「ホーム画面に追加」</b>してから、ホーム画面のアイコンで起動してください。</p>
+            <div class="guide-steps">
+                <b>iPhone (Safari):</b><br>
+                画面下の共有ボタン [↑] →「ホーム画面に追加」<br><br>
+                <b>Android (Chrome):</b><br>
+                右上のメニュー [⋮] →「アプリをインストール」
+            </div>
+            <p style="font-size:0.8rem; color:#888;">追加後にホーム画面のアイコンから起動すると、アプリの全機能が利用可能になります。</p>
+        </div>
+    </div>
+
+    <script>
+        const STATUS_URL = 'https://riverteacher.gitlab.io/yk-english-vocabulary-test/takayarpg2/status.html';
+        const APP_URL = 'app.html';
+
+        // Service Worker 登録
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('./sw.js').catch(() => {});
+        }
+
+        function isPWA() {
+            return window.matchMedia('(display-mode: standalone)').matches ||
+                   window.navigator.standalone === true;
+        }
+
+        function showError(msg) {
+            document.getElementById('loading-screen').style.display = 'none';
+            document.getElementById('error-display').style.display = 'flex';
+            document.getElementById('error-message').textContent = msg;
+        }
+
+        async function checkConnectionAndLaunch() {
+            const loading = document.getElementById('loading-screen');
+            const frame = document.getElementById('app-frame');
+            
+            loading.style.display = 'flex';
+
+            try {
+                // HEADリクエストでステータスのみ確認（軽量）
+                const response = await fetch(STATUS_URL, { 
+                    method: 'HEAD',
+                    cache: 'no-store' 
+                });
+
+                if (response.ok) {
+                    // 200番台成功
+                    frame.src = APP_URL + '?t=' + Date.now();
+                    frame.style.display = 'block';
+                    loading.style.display = 'none';
+                } else {
+                    // 400, 500番台エラー
+                    showError("通信エラーが発生しました\nアプリを再起動してください。");
+                }
+            } catch (error) {
+                // ネットワークオフライン、CORSエラー、フェッチ失敗
+                showError("通信エラーが発生しました\nアプリを再起動してください。");
+            }
+        }
+
+        window.addEventListener('load', () => {
+            if (isPWA()) {
+                // PWAとして起動している場合はガイドを隠してチェック開始
+                document.getElementById('install-guide').style.display = 'none';
+                checkConnectionAndLaunch();
+            } else {
+                // ブラウザ閲覧時はデフォルトのガイドを表示
+                document.getElementById('install-guide').style.display = 'flex';
+            }
+        });
+    </script>
+</body>
+</html>
+
