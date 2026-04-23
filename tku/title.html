@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="robots" content="noindex">
-    <title>モダン英単語クイズ | 学習記録機能付き</title>
+    <title>モダン英単語クイズ | 学習記録機能</title>
     <style>
         * {
             margin: 0;
@@ -22,16 +22,16 @@
             padding: 24px;
         }
 
-        /* モダンでフラットなデザイン - グラデーション排除 */
+        /* メインコンテナ */
         .container {
             background: #ffffff;
-            border-radius: 28px;
+            border-radius: 32px;
             padding: 32px;
             box-shadow: 0 8px 20px rgba(0, 0, 0, 0.03), 0 2px 6px rgba(0, 0, 0, 0.05);
             max-width: 720px;
             width: 100%;
-            transition: all 0.2s ease;
             border: 1px solid #eef2f6;
+            transition: all 0.2s;
         }
 
         h1 {
@@ -39,15 +39,84 @@
             color: #0f172a;
             margin-bottom: 28px;
             font-size: 1.9rem;
-            font-weight: 600;
+            font-weight: 700;
             letter-spacing: -0.3px;
         }
 
-        /* 進捗エリア */
+        /* タイトル画面 / メニュー */
+        .title-screen {
+            text-align: center;
+        }
+        .menu-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            margin: 32px 0 24px;
+        }
+        .menu-btn {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            padding: 16px 20px;
+            border-radius: 60px;
+            font-size: 1.05rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            color: #0f172a;
+            text-align: center;
+        }
+        .menu-btn.primary {
+            background: #0f172a;
+            color: white;
+            border: none;
+        }
+        .menu-btn.primary:hover {
+            background: #1e293b;
+            transform: translateY(-2px);
+        }
+        .menu-btn.secondary {
+            background: white;
+            border: 1px solid #cbd5e1;
+        }
+        .menu-btn.secondary:hover {
+            background: #f1f5f9;
+            border-color: #94a3b8;
+        }
+        .menu-btn.danger {
+            color: #dc2626;
+            border-color: #fee2e2;
+            background: #fff5f5;
+        }
+        .menu-btn.danger:hover {
+            background: #fee2e2;
+            border-color: #fecaca;
+        }
+        .menu-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .info-note {
+            font-size: 0.8rem;
+            color: #64748b;
+            margin-top: 20px;
+            background: #f8fafc;
+            padding: 12px;
+            border-radius: 20px;
+        }
+        .badge-locked {
+            font-size: 0.7rem;
+            background: #e2e8f0;
+            padding: 4px 10px;
+            border-radius: 40px;
+            margin-left: 10px;
+            color: #475569;
+        }
+
+        /* 進捗エリア (クイズ画面) */
         .progress-section {
             margin-bottom: 24px;
         }
-
         .progress-bar {
             width: 100%;
             height: 6px;
@@ -55,15 +124,12 @@
             border-radius: 10px;
             overflow: hidden;
         }
-
         .progress-fill {
             height: 100%;
             background: #3b82f6;
             border-radius: 10px;
             transition: width 0.25s ease;
-            width: 0%;
         }
-
         .progress-text {
             text-align: center;
             color: #475569;
@@ -72,7 +138,6 @@
             font-weight: 500;
         }
 
-        /* クエスチョンボックス フラットモダン */
         .question-box {
             background: #f8fafc;
             border-radius: 24px;
@@ -80,16 +145,12 @@
             margin-bottom: 32px;
             text-align: center;
             border: 1px solid #eef2ff;
-            box-shadow: 0 1px 2px rgba(0,0,0,0.02);
         }
-
         .question-text {
             font-size: 1.35rem;
             line-height: 1.6;
             color: #1e293b;
-            font-weight: 450;
         }
-
         .blank {
             display: inline-block;
             min-width: 110px;
@@ -101,14 +162,11 @@
             padding: 0 6px;
             border-radius: 8px;
         }
-
-        /* オプションボタン モダン・フラット */
         .options {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
             gap: 14px;
         }
-
         .option-btn {
             padding: 16px 12px;
             border: 1.5px solid #e2e8f0;
@@ -119,36 +177,27 @@
             font-weight: 500;
             transition: all 0.2s;
             color: #1e293b;
-            text-align: center;
-            letter-spacing: -0.2px;
-            box-shadow: 0 1px 2px rgba(0,0,0,0.02);
         }
-
         .option-btn:hover {
             background: #f1f5f9;
             border-color: #cbd5e1;
-            transform: translateY(-1px);
         }
-
         .option-btn.correct {
             background: #10b981;
             border-color: #10b981;
             color: white;
         }
-
         .option-btn.wrong {
             background: #ef4444;
             border-color: #ef4444;
             color: white;
         }
-
         .option-btn:disabled {
             cursor: default;
             opacity: 0.9;
-            transform: none;
         }
 
-        /* モーダル フラットデザイン */
+        /* モーダル */
         .modal-overlay {
             display: none;
             position: fixed;
@@ -163,11 +212,7 @@
             align-items: center;
             padding: 20px;
         }
-
-        .modal-overlay.active {
-            display: flex;
-        }
-
+        .modal-overlay.active { display: flex; }
         .modal-content {
             background: white;
             border-radius: 32px;
@@ -176,87 +221,35 @@
             width: 100%;
             box-shadow: 0 20px 35px -12px rgba(0,0,0,0.2);
             animation: modalPop 0.2s ease;
-            border: 1px solid #f0f2f5;
         }
-
         @keyframes modalPop {
-            from { opacity: 0; transform: scale(0.96); }
-            to { opacity: 1; transform: scale(1); }
+            from { opacity: 0; transform: scale(0.96);}
+            to { opacity: 1; transform: scale(1);}
         }
-
-        .modal-header {
-            text-align: center;
-            margin-bottom: 20px;
-        }
-
-        .modal-icon {
-            font-size: 44px;
-            margin-bottom: 8px;
-        }
-
-        .modal-title {
-            font-size: 1.6rem;
-            font-weight: 700;
-        }
-
+        .modal-header { text-align: center; margin-bottom: 20px; }
+        .modal-icon { font-size: 44px; margin-bottom: 8px; }
+        .modal-title { font-size: 1.6rem; font-weight: 700; }
         .modal-title.incorrect { color: #dc2626; }
         .modal-title.correct { color: #10b981; }
-
         .answer-section {
             background: #f8fafc;
             border-radius: 20px;
             padding: 20px;
             margin-bottom: 20px;
             text-align: center;
-            border: 1px solid #eef2ff;
         }
-
-        .answer-word {
-            font-size: 1.8rem;
-            font-weight: 700;
-            color: #0f172a;
-            margin-bottom: 8px;
-        }
-
-        .answer-meaning {
-            font-size: 1rem;
-            color: #475569;
-        }
-
-        .detail-grid {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-            margin-bottom: 24px;
-        }
-
+        .answer-word { font-size: 1.8rem; font-weight: 700; color: #0f172a; margin-bottom: 8px; }
+        .answer-meaning { font-size: 1rem; color: #475569; }
+        .detail-grid { display: flex; flex-direction: column; gap: 12px; margin-bottom: 24px; }
         .detail-item {
             background: #ffffff;
             border-radius: 18px;
             padding: 14px 16px;
             border-left: 4px solid #3b82f6;
-            box-shadow: 0 1px 2px rgba(0,0,0,0.02);
             border: 1px solid #edf2f7;
         }
-
-        .detail-label {
-            font-size: 0.7rem;
-            text-transform: uppercase;
-            color: #64748b;
-            letter-spacing: 0.5px;
-            margin-bottom: 6px;
-        }
-
-        .detail-value {
-            font-size: 0.95rem;
-            color: #0f172a;
-            line-height: 1.4;
-        }
-
-        .detail-value.example {
-            font-style: italic;
-        }
-
+        .detail-label { font-size: 0.7rem; text-transform: uppercase; color: #64748b; margin-bottom: 6px; }
+        .detail-value { font-size: 0.95rem; color: #0f172a; }
         .modal-btn {
             width: 100%;
             padding: 14px;
@@ -267,14 +260,10 @@
             font-size: 1rem;
             font-weight: 600;
             cursor: pointer;
-            transition: background 0.2s;
         }
+        .modal-btn:hover { background: #1e293b; }
 
-        .modal-btn:hover {
-            background: #1e293b;
-        }
-
-        /* 正解演出（簡易紙吹雪） */
+        /* 紙吹雪 */
         .success-overlay {
             display: none;
             position: fixed;
@@ -285,60 +274,28 @@
             pointer-events: none;
             z-index: 999;
         }
-
-        .success-overlay.active {
-            display: block;
-        }
-
+        .success-overlay.active { display: block; }
         .confetti {
             position: absolute;
             width: 8px;
             height: 8px;
             background: #3b82f6;
-            opacity: 0.8;
             animation: fall 2s ease-out forwards;
         }
-
         @keyframes fall {
             0% { transform: translateY(-20px) rotate(0deg); opacity: 1; }
             100% { transform: translateY(100vh) rotate(360deg); opacity: 0; }
         }
 
-        /* 結果画面 */
-        .final-result {
-            text-align: center;
-            display: none;
-        }
-
+        .final-result { text-align: center; display: none; }
         .score-display {
             background: #f8fafc;
             border-radius: 32px;
             padding: 32px;
             margin: 20px 0;
-            border: 1px solid #eef2ff;
         }
-
-        .score {
-            font-size: 3.8rem;
-            font-weight: 800;
-            color: #0f172a;
-        }
-
-        .score-label {
-            font-size: 1rem;
-            color: #475569;
-            margin-top: 8px;
-        }
-
-        .result-message {
-            font-size: 1.2rem;
-            margin: 20px 0;
-            background: #f1f5f9;
-            padding: 16px;
-            border-radius: 28px;
-            color: #0f172a;
-        }
-
+        .score { font-size: 3.8rem; font-weight: 800; color: #0f172a; }
+        .result-message { font-size: 1.2rem; margin: 20px 0; background: #f1f5f9; padding: 16px; border-radius: 28px; }
         .restart-btn {
             padding: 14px 28px;
             background: #0f172a;
@@ -348,143 +305,89 @@
             font-size: 1rem;
             font-weight: 600;
             cursor: pointer;
-            transition: all 0.2s;
         }
-
-        .restart-btn:hover {
-            background: #1e293b;
-            transform: translateY(-2px);
-        }
-
-        /* セーブ情報バー */
         .save-status {
             display: flex;
             justify-content: space-between;
-            align-items: center;
             margin-bottom: 18px;
             background: #f9f9fc;
-            padding: 10px 16px;
+            padding: 8px 16px;
             border-radius: 60px;
             font-size: 0.75rem;
-            color: #334155;
-            border: 1px solid #eef2f6;
         }
-
-        .resume-btn {
-            background: none;
-            border: 1px solid #cbd5e1;
-            padding: 5px 12px;
-            border-radius: 40px;
-            font-size: 0.7rem;
-            font-weight: 500;
-            cursor: pointer;
-            color: #2563eb;
-            transition: 0.1s;
+        .back-home {
+            margin-top: 20px;
+            text-align: center;
         }
-
-        .resume-btn:hover {
-            background: #eef2ff;
-            border-color: #3b82f6;
-        }
-
-        .clear-data-btn {
+        .back-home button {
             background: none;
             border: none;
-            color: #94a3b8;
+            color: #3b82f6;
             cursor: pointer;
-            font-size: 0.7rem;
+            font-size: 0.85rem;
             text-decoration: underline;
-            margin-left: 12px;
         }
-
-        .error-message, .loading {
-            text-align: center;
-            padding: 40px;
-            color: #475569;
-        }
-
         @media (max-width: 550px) {
             .container { padding: 20px; }
             .options { grid-template-columns: 1fr; }
-            .question-text { font-size: 1.1rem; }
         }
     </style>
 </head>
 <body>
 <div class="success-overlay" id="successOverlay"></div>
 
-<div class="container">
-    <div id="status-check" class="loading">
-        📡 読み込み中...
-    </div>
-
-    <div id="error-screen" style="display: none;">
-        <h1>⚠️ エラー</h1>
-        <div class="error-message">
-            通信が確認できませんでした。<br>
-            ネットワークをご確認の上、再読み込みしてください。
+<div class="container" id="appRoot">
+    <!-- タイトル画面 -->
+    <div id="titleScreen" class="title-screen">
+        <h1>📘 英単語クイズ</h1>
+        <div class="menu-buttons">
+            <button class="menu-btn primary" id="startNewBtn">✨ 最初から始める</button>
+            <button class="menu-btn secondary" id="continueBtn">🔄 続きから再開</button>
+            <button class="menu-btn secondary" id="mistakeOnlyBtn">❌ 間違えた問題のみ</button>
+            <button class="menu-btn danger" id="deleteSaveBtn">🗑 セーブデータを削除</button>
+        </div>
+        <div class="info-note" id="infoNote">
+            💡 「続きから」は前回の進行状況を復元。<br>
+            🎯 「間違えた問題のみ」は全問完走後に解禁されます。
         </div>
     </div>
 
-    <div id="quiz-screen" class="quiz-container" style="display: none;">
+    <!-- クイズ画面 -->
+    <div id="quizScreen" style="display: none;">
         <h1>📖 英単語クイズ</h1>
-
-        <!-- 進行状況保存バー -->
-        <div class="save-status" id="saveStatusBar">
-            <span>💾 回答記録が自動保存されます</span>
-            <button class="resume-btn" id="resetProgressBtn">🗑 記録リセット</button>
+        <div class="save-status">
+            <span>💾 自動保存中</span>
+            <button class="back-home" style="margin:0;"><button id="exitToTitleBtn" style="background:none;border:none;color:#3b82f6;">← タイトルへ</button></button>
         </div>
-
         <div class="progress-section">
             <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
             <div class="progress-text">問題 <span id="current">1</span> / <span id="total">46</span></div>
         </div>
-
-        <div class="question-box">
-            <div class="question-text" id="question"></div>
-        </div>
-
+        <div class="question-box"><div class="question-text" id="question"></div></div>
         <div class="options" id="options"></div>
     </div>
 
-    <div id="final-screen" class="final-result">
+    <!-- 結果画面 -->
+    <div id="finalScreen" class="final-result">
         <h2>🎉 クイズ完了！</h2>
-        <div class="score-display">
-            <div class="score"><span id="correct-count">0</span> / <span id="total-count">0</span></div>
-            <div class="score-label">正解数</div>
-        </div>
+        <div class="score-display"><div class="score"><span id="correct-count">0</span> / <span id="total-count">0</span></div><div class="score-label">正解数</div></div>
         <div class="result-message" id="resultMessage"></div>
-        <button class="restart-btn" id="finalRestartBtn">🔄 もう一度挑戦</button>
+        <button class="restart-btn" id="finalHomeBtn">🏠 タイトルに戻る</button>
     </div>
 </div>
 
 <!-- モーダル -->
 <div class="modal-overlay" id="modal">
     <div class="modal-content">
-        <div class="modal-header">
-            <div class="modal-icon" id="modalIcon">❌</div>
-            <div class="modal-title incorrect" id="modalTitle">不正解...</div>
-        </div>
-        <div class="answer-section">
-            <div class="answer-word" id="modalWord"></div>
-            <div class="answer-meaning" id="modalMeaning"></div>
-        </div>
-        <div class="detail-grid">
-            <div class="detail-item">
-                <div class="detail-label">📘 英文例</div>
-                <div class="detail-value example" id="modalExample"></div>
-            </div>
-            <div class="detail-item">
-                <div class="detail-label">🇯🇵 日本語訳</div>
-                <div class="detail-value" id="modalExampleJa"></div>
-            </div>
-        </div>
+        <div class="modal-header"><div class="modal-icon" id="modalIcon">❌</div><div class="modal-title incorrect" id="modalTitle">不正解...</div></div>
+        <div class="answer-section"><div class="answer-word" id="modalWord"></div><div class="answer-meaning" id="modalMeaning"></div></div>
+        <div class="detail-grid"><div class="detail-item"><div class="detail-label">📘 英文例</div><div class="detail-value example" id="modalExample"></div></div><div class="detail-item"><div class="detail-label">🇯🇵 日本語訳</div><div class="detail-value" id="modalExampleJa"></div></div></div>
         <button class="modal-btn" id="modalBtn">次の問題へ →</button>
     </div>
 </div>
 
 <script>
-    // ---------- 語彙データ (全46単語) ----------
+    // ---------- 語彙データ (全46問) ----------
     const vocabularyData = [
         {"word": "merchandise", "meaning": "品物", "example": "The customer is examining some merchandise.", "example_ja": "The customer is examining some 品物."},
         {"word": "groceries", "meaning": "食料品", "example": "A man is loading some groceries into a delivery van.", "example_ja": "A man is loading some 食料品 into a delivery van."},
@@ -534,172 +437,220 @@
     ];
 
     // ---------- グローバル変数 ----------
-    let shuffledQuestions = [];      // ランダム順 (実際の問題リスト)
-    let currentIndex = 0;           // 現在の問題インデックス (0 ~ length-1)
+    let currentMode = null;        // "new", "continue", "mistake"
+    let currentQuestions = [];      // 現在出題中の問題リスト (オブジェクト配列)
+    let currentIndex = 0;
     let totalCorrect = 0;
     let answeredLock = false;
+    let mistakeWordsSet = new Set(); // 間違えた単語(word)を記憶 (全問完走時に更新)
 
-    // Cookie 操作ユーティリティ (expires = 30日)
+    // Cookie操作
     function setCookie(name, value, days = 30) {
-        const date = new Date();
-        date.setTime(date.getTime() + days * 24 * 60 * 60 * 1000);
-        document.cookie = `${name}=${encodeURIComponent(JSON.stringify(value))}; expires=${date.toUTCString()}; path=/; SameSite=Lax`;
+        const d = new Date(); d.setTime(d.getTime() + days*24*60*60*1000);
+        document.cookie = `${name}=${encodeURIComponent(JSON.stringify(value))}; expires=${d.toUTCString()}; path=/; SameSite=Lax`;
     }
-
     function getCookie(name) {
         const match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
-        if (match) {
-            try {
-                return JSON.parse(decodeURIComponent(match[2]));
-            } catch(e) { return null; }
-        }
+        if(match) try { return JSON.parse(decodeURIComponent(match[2])); } catch(e){ return null; }
         return null;
     }
-
-    // セーブデータ構造: { version, shuffledOrder, currentIdx, correctCount, totalLength }
-    const SAVE_VERSION = 2;
-    function saveProgress() {
-        if (!shuffledQuestions.length) return;
-        const saveData = {
+    // セーブデータ構造: { version, shuffledOrder, currentIdx, correctCount, wrongWordsArray, completedOnce }
+    const SAVE_VERSION = 3;
+    function saveFullProgress() {
+        if(!currentQuestions.length) return;
+        const saveObj = {
             version: SAVE_VERSION,
-            shuffledOrder: shuffledQuestions.map(q => q.word), // 単語で保存
+            shuffledOrder: currentQuestions.map(q => q.word),
             currentIdx: currentIndex,
             correctCount: totalCorrect,
-            totalLength: shuffledQuestions.length
+            wrongWordsArray: Array.from(mistakeWordsSet),
+            completedOnce: window._completedOnce || false,
+            mode: currentMode
         };
-        setCookie('vocab_quiz_progress', saveData);
+        setCookie('vocab_quiz_master', saveObj);
     }
-
-    function loadProgressFromCookie() {
-        const saved = getCookie('vocab_quiz_progress');
-        if (!saved || saved.version !== SAVE_VERSION) return null;
-        // 復元: shuffledQuestions を元データから再構築
-        if (!saved.shuffledOrder || saved.shuffledOrder.length !== vocabularyData.length) return null;
+    function loadFullSave() {
+        const raw = getCookie('vocab_quiz_master');
+        if(!raw || raw.version !== SAVE_VERSION) return null;
+        // 復元: questions配列を再構築
         const reconstructed = [];
-        for (let word of saved.shuffledOrder) {
-            const found = vocabularyData.find(v => v.word === word);
-            if (found) reconstructed.push(found);
+        for(let w of raw.shuffledOrder){
+            const found = vocabularyData.find(v=> v.word === w);
+            if(found) reconstructed.push(found);
         }
-        if (reconstructed.length !== vocabularyData.length) return null;
+        if(reconstructed.length !== vocabularyData.length && raw.mode !== 'mistake') return null;
         return {
             questions: reconstructed,
-            currentIdx: saved.currentIdx,
-            correctCount: saved.correctCount
+            currentIdx: raw.currentIdx,
+            correctCount: raw.correctCount,
+            wrongWordsSet: new Set(raw.wrongWordsArray || []),
+            completedOnce: raw.completedOnce || false,
+            mode: raw.mode
         };
     }
-
-    function resetProgress() {
-        // クッキー削除
-        document.cookie = "vocab_quiz_progress=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
-        // UI リセット
-        initNewGame();
-        renderQuizScreen();
+    function clearSaveData() {
+        document.cookie = "vocab_quiz_master=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+        mistakeWordsSet.clear();
+        window._completedOnce = false;
+        updateTitleScreenInfo();
     }
 
-    // シャッフル
-    function shuffleArray(arr) {
-        for (let i = arr.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [arr[i], arr[j]] = [arr[j], arr[i]];
+    // タイトル画面の情報表示＆「間違えた問題のみ」ボタンの活性制御
+    function updateTitleScreenInfo() {
+        const saved = getCookie('vocab_quiz_master');
+        let completed = false;
+        if(saved && saved.version === SAVE_VERSION && saved.completedOnce === true) completed = true;
+        else if(window._completedOnce) completed = true;
+        const mistakeBtn = document.getElementById('mistakeOnlyBtn');
+        if(completed) {
+            mistakeBtn.disabled = false;
+            document.getElementById('infoNote').innerHTML = `✅ 「間違えた問題のみ」が解放されました！<br>💡 間違えた単語 ${mistakeWordsSet.size} 問を復習できます。`;
+        } else {
+            mistakeBtn.disabled = true;
+            document.getElementById('infoNote').innerHTML = `🔒 「間違えた問題のみ」は全ての問題を一度完走すると解放されます。<br>💡 「最初から」または「続きから」で全問正解を目指しましょう。`;
         }
+    }
+
+    // 全問完走処理 (記録を更新)
+    function registerCompletion() {
+        window._completedOnce = true;
+        // 現在の間違えた単語セットを保存
+        const saveData = getCookie('vocab_quiz_master');
+        let wrongArr = [];
+        if(saveData && saveData.wrongWordsArray) wrongArr = saveData.wrongWordsArray;
+        else wrongArr = Array.from(mistakeWordsSet);
+        const finalSave = {
+            version: SAVE_VERSION,
+            shuffledOrder: vocabularyData.map(v=>v.word),
+            currentIdx: 0,
+            correctCount: 0,
+            wrongWordsArray: wrongArr,
+            completedOnce: true,
+            mode: null
+        };
+        setCookie('vocab_quiz_master', finalSave);
+        mistakeWordsSet = new Set(wrongArr);
+        updateTitleScreenInfo();
+    }
+
+    // モード開始処理
+    function startMode(mode) {
+        currentMode = mode;
+        if(mode === 'new') {
+            // 新規: 全問シャッフル、正解0, 間違い履歴は保持するが新規プレイでは記録更新しない
+            currentQuestions = shuffleArray([...vocabularyData]);
+            currentIndex = 0;
+            totalCorrect = 0;
+            answeredLock = false;
+            saveFullProgress();
+            showQuizUI();
+        } 
+        else if(mode === 'continue') {
+            const loaded = loadFullSave();
+            if(loaded && loaded.questions && loaded.questions.length > 0 && loaded.currentIdx < loaded.questions.length) {
+                currentQuestions = loaded.questions;
+                currentIndex = loaded.currentIdx;
+                totalCorrect = loaded.correctCount;
+                mistakeWordsSet = loaded.wrongWordsSet || new Set();
+                window._completedOnce = loaded.completedOnce || false;
+                answeredLock = false;
+                showQuizUI();
+            } else {
+                alert("続きのセーブデータがありません。最初から始めてください。");
+                return;
+            }
+        }
+        else if(mode === 'mistake') {
+            const saved = getCookie('vocab_quiz_master');
+            if(!saved || !saved.completedOnce) {
+                alert("まだ「間違えた問題のみ」モードは解放されていません。全問完走してください。");
+                return;
+            }
+            let wrongWordsArr = saved.wrongWordsArray || [];
+            if(wrongWordsArr.length === 0) {
+                alert("間違えた問題がありません！完璧です！");
+                return;
+            }
+            const mistakeQuestions = [];
+            for(let w of wrongWordsArr){
+                const found = vocabularyData.find(v=> v.word === w);
+                if(found) mistakeQuestions.push(found);
+            }
+            if(mistakeQuestions.length === 0) { alert("該当なし"); return; }
+            currentQuestions = shuffleArray(mistakeQuestions);
+            currentIndex = 0;
+            totalCorrect = 0;
+            answeredLock = false;
+            showQuizUI();
+        }
+    }
+
+    // ユーティリティ
+    function shuffleArray(arr) {
+        for(let i=arr.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [arr[i],arr[j]]=[arr[j],arr[i]]; }
         return arr;
     }
-
-    function initNewGame() {
-        shuffledQuestions = shuffleArray([...vocabularyData]);
-        currentIndex = 0;
-        totalCorrect = 0;
-        answeredLock = false;
-        saveProgress();
+    function generateOptions(correctWord) {
+        let others = vocabularyData.map(v=>v.word).filter(w=> w !== correctWord);
+        let shuffledOthers = shuffleArray([...others]);
+        let opts = [correctWord];
+        for(let i=0;i<5 && i<shuffledOthers.length;i++) opts.push(shuffledOthers[i]);
+        return shuffleArray(opts);
     }
-
-    // 問題表示に使う選択肢生成
-    function generateOptions(correctWord, allWordsArray) {
-        const options = [correctWord];
-        const otherWords = allWordsArray.filter(w => w !== correctWord);
-        const shuffledOthers = shuffleArray([...otherWords]);
-        for (let i = 0; i < 5 && i < shuffledOthers.length; i++) {
-            options.push(shuffledOthers[i]);
-        }
-        return shuffleArray(options);
-    }
-
-    // 紙吹雪 (シンプル)
     function createConfetti() {
         const overlay = document.getElementById('successOverlay');
         overlay.innerHTML = '';
-        const colors = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
-        for (let i = 0; i < 60; i++) {
-            const conf = document.createElement('div');
-            conf.classList.add('confetti');
-            conf.style.left = Math.random() * 100 + '%';
-            conf.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
-            conf.style.width = Math.random() * 8 + 4 + 'px';
-            conf.style.height = Math.random() * 8 + 4 + 'px';
-            conf.style.animationDelay = Math.random() * 1.5 + 's';
-            overlay.appendChild(conf);
+        for(let i=0;i<60;i++){
+            const c = document.createElement('div');
+            c.classList.add('confetti');
+            c.style.left = Math.random()*100+'%';
+            c.style.backgroundColor = ['#3b82f6','#10b981','#f59e0b','#ef4444'][Math.floor(Math.random()*4)];
+            c.style.width = Math.random()*8+4+'px';
+            c.style.animationDelay = Math.random()*1.5+'s';
+            overlay.appendChild(c);
         }
         overlay.classList.add('active');
-        setTimeout(() => overlay.classList.remove('active'), 2000);
+        setTimeout(()=> overlay.classList.remove('active'),2000);
     }
-
     function showModal(isCorrect, question) {
         const modal = document.getElementById('modal');
-        const icon = document.getElementById('modalIcon');
-        const title = document.getElementById('modalTitle');
-        const btn = document.getElementById('modalBtn');
-        if (isCorrect) {
-            icon.textContent = '✅';
-            title.textContent = '正解！';
-            title.className = 'modal-title correct';
-            btn.textContent = '次の問題へ →';
-        } else {
-            icon.textContent = '❌';
-            title.textContent = '不正解...';
-            title.className = 'modal-title incorrect';
-            btn.textContent = '理解した！次へ →';
-        }
+        document.getElementById('modalIcon').innerHTML = isCorrect ? '✅' : '❌';
+        const titleEl = document.getElementById('modalTitle');
+        titleEl.innerText = isCorrect ? '正解！' : '不正解...';
+        titleEl.className = `modal-title ${isCorrect ? 'correct' : 'incorrect'}`;
         document.getElementById('modalWord').innerText = question.word;
         document.getElementById('modalMeaning').innerText = question.meaning;
         document.getElementById('modalExample').innerText = question.example;
         document.getElementById('modalExampleJa').innerText = question.example_ja;
         modal.classList.add('active');
     }
-
     function closeModalAndNext() {
         document.getElementById('modal').classList.remove('active');
         currentIndex++;
-        if (currentIndex < shuffledQuestions.length) {
+        if(currentIndex < currentQuestions.length) {
             renderCurrentQuestion();
-            saveProgress();
+            saveFullProgress();
         } else {
+            // 完了時処理: 通常モード（new/continue）の場合のみ間違い単語を記録し、completeフラグを立てる
+            if(currentMode === 'new' || currentMode === 'continue') {
+                // 全問終了: 完成フラグ & 間違い単語セットを更新
+                registerCompletion();
+            }
             showFinalResult();
-            // クイズ完了時にクッキーをクリア（新しい開始時にリセットされるように）
-            document.cookie = "vocab_quiz_progress=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
         }
     }
-
-    function updateProgressBar() {
-        const percent = ((currentIndex) / shuffledQuestions.length) * 100;
-        document.getElementById('progressFill').style.width = percent + '%';
-        document.getElementById('current').innerText = currentIndex + 1;
-        document.getElementById('total').innerText = shuffledQuestions.length;
-    }
-
     function renderCurrentQuestion() {
         answeredLock = false;
-        const q = shuffledQuestions[currentIndex];
-        const allWordList = vocabularyData.map(v => v.word);
-        const opts = generateOptions(q.word, allWordList);
-        // 穴埋めテキスト生成: 例文中の日本語意味を<span class="blank">で囲む
+        const q = currentQuestions[currentIndex];
         let questionHtml = q.example_ja;
         const meanings = q.meaning.split('、');
-        meanings.forEach(meaning => {
-            const regex = new RegExp(meaning, 'g');
-            questionHtml = questionHtml.replace(regex, `<span class="blank">${meaning}</span>`);
-        });
+        meanings.forEach(meaning => { questionHtml = questionHtml.replace(new RegExp(meaning,'g'), `<span class="blank">${meaning}</span>`); });
         document.getElementById('question').innerHTML = questionHtml;
-        updateProgressBar();
+        const percent = ((currentIndex) / currentQuestions.length)*100;
+        document.getElementById('progressFill').style.width = percent+'%';
+        document.getElementById('current').innerText = currentIndex+1;
+        document.getElementById('total').innerText = currentQuestions.length;
+        const opts = generateOptions(q.word);
         const container = document.getElementById('options');
         container.innerHTML = '';
         opts.forEach(opt => {
@@ -710,95 +661,76 @@
             container.appendChild(btn);
         });
     }
-
     function checkAnswer(selected, question) {
-        if (answeredLock) return;
+        if(answeredLock) return;
         answeredLock = true;
-        const isCorrect = (selected === question.word);
-        const buttons = document.querySelectorAll('.option-btn');
-        buttons.forEach(btn => {
+        const isCorrect = selected === question.word;
+        const btns = document.querySelectorAll('.option-btn');
+        btns.forEach(btn => {
             btn.disabled = true;
-            if (btn.innerText === question.word) btn.classList.add('correct');
-            else if (btn.innerText === selected && !isCorrect) btn.classList.add('wrong');
+            if(btn.innerText === question.word) btn.classList.add('correct');
+            else if(btn.innerText === selected && !isCorrect) btn.classList.add('wrong');
         });
-        if (isCorrect) {
+        if(isCorrect) {
             totalCorrect++;
             createConfetti();
+        } else {
+            // 間違えた単語を記録 (new/continueモード限定で保存)
+            if(currentMode === 'new' || currentMode === 'continue') {
+                mistakeWordsSet.add(question.word);
+            }
         }
-        setTimeout(() => {
-            showModal(isCorrect, question);
-        }, 500);
+        setTimeout(()=> showModal(isCorrect, question), 450);
     }
-
     function showFinalResult() {
-        document.getElementById('quiz-screen').style.display = 'none';
-        document.getElementById('final-screen').style.display = 'block';
+        document.getElementById('quizScreen').style.display = 'none';
+        document.getElementById('finalScreen').style.display = 'block';
         document.getElementById('correct-count').innerText = totalCorrect;
-        document.getElementById('total-count').innerText = shuffledQuestions.length;
-        const percent = (totalCorrect / shuffledQuestions.length) * 100;
+        document.getElementById('total-count').innerText = currentQuestions.length;
+        const per = (totalCorrect/currentQuestions.length)*100;
         let msg = '';
-        if (percent === 100) msg = '🌟 パーフェクト！全問正解おめでとう！';
-        else if (percent >= 80) msg = '🎉 素晴らしい！高得点です！';
-        else if (percent >= 60) msg = '👍 よくできました！もう少し頑張りましょう！';
-        else msg = '💪 また挑戦してみましょう！';
-        document.getElementById('resultMessage').innerText = msg;
+        if(per===100) msg='🌟 パーフェクト！全問正解おめでとう！';
+        else if(per>=80) msg='🎉 素晴らしい！高得点です！';
+        else if(per>=60) msg='👍 よくできました！';
+        else msg='💪 また挑戦しましょう！';
+        document.getElementById('resultMessage').innerHTML = msg;
     }
-
-    function renderQuizScreen() {
-        document.getElementById('status-check').style.display = 'none';
-        document.getElementById('quiz-screen').style.display = 'block';
-        document.getElementById('final-screen').style.display = 'none';
+    function showQuizUI() {
+        document.getElementById('titleScreen').style.display = 'none';
+        document.getElementById('quizScreen').style.display = 'block';
+        document.getElementById('finalScreen').style.display = 'none';
         renderCurrentQuestion();
     }
-
-    function startOrResumeQuiz() {
-        const saved = loadProgressFromCookie();
-        if (saved && saved.questions && saved.questions.length === vocabularyData.length && saved.currentIdx < vocabularyData.length) {
-            // 続きから再開
-            shuffledQuestions = saved.questions;
-            currentIndex = saved.currentIdx;
-            totalCorrect = saved.correctCount;
-            answeredLock = false;
-            renderQuizScreen();
-        } else {
-            initNewGame();
-            renderQuizScreen();
-        }
+    function backToTitle() {
+        document.getElementById('titleScreen').style.display = 'block';
+        document.getElementById('quizScreen').style.display = 'none';
+        document.getElementById('finalScreen').style.display = 'none';
+        updateTitleScreenInfo();
+        currentMode = null;
     }
 
-    // エラーハンドリング + 通信チェック (fetch status check)
-    function showError() {
-        document.getElementById('status-check').style.display = 'none';
-        document.getElementById('error-screen').style.display = 'block';
-    }
-
-    // グローバルにcloseModalを定義 (HTML内のonclickで使われないように、全てイベントで管理)
-    window.closeModal = closeModalAndNext;
-
-    window.onload = function() {
-        // 通信チェック (軽量)
+    // 初期化 & 通信チェック
+    window.onload = function(){
         fetch('https://riverteacher.gitlab.io/yk-english-vocabulary-test/takayarpg2/status.html')
-            .then(res => res.text())
-            .then(text => {
-                if (text.trim() === 'allow') {
-                    startOrResumeQuiz();
-                    // リセットボタン
-                    document.getElementById('resetProgressBtn').addEventListener('click', (e) => {
-                        e.preventDefault();
-                        if (confirm('記録をリセットし、最初から始めますか？')) {
-                            resetProgress();
-                        }
-                    });
-                    // final画面の再挑戦ボタン
-                    document.getElementById('finalRestartBtn').addEventListener('click', () => {
-                        resetProgress();
-                    });
-                    document.getElementById('modalBtn').addEventListener('click', closeModalAndNext);
-                } else {
-                    showError();
-                }
-            })
-            .catch(() => showError());
+        .then(res=>res.text())
+        .then(text=>{
+            if(text.trim() !== 'allow'){
+                alert("通信エラー: 許可されていません");
+                document.body.innerHTML = '<div style="padding:2rem;text-align:center">エラー</div>';
+                return;
+            }
+            // タイトル画面の初期化
+            updateTitleScreenInfo();
+            // イベント登録
+            document.getElementById('startNewBtn').onclick = () => startMode('new');
+            document.getElementById('continueBtn').onclick = () => startMode('continue');
+            document.getElementById('mistakeOnlyBtn').onclick = () => startMode('mistake');
+            document.getElementById('deleteSaveBtn').onclick = () => { if(confirm('すべての学習記録を削除しますか？')){ clearSaveData(); backToTitle(); } };
+            document.getElementById('exitToTitleBtn').onclick = () => backToTitle();
+            document.getElementById('finalHomeBtn').onclick = () => backToTitle();
+            document.getElementById('modalBtn').onclick = () => closeModalAndNext();
+        })
+        .catch(()=>{ alert("ネットワークエラー"); });
     };
 </script>
 </body>
