@@ -1,6 +1,6 @@
 {
-    "name": "TKU",
-    "short_name": "TKU",
+    "name": "TKU英単語",
+    "short_name": "TKU英単語",
     "start_url": "./index.html",
     "display": "standalone",
     "orientation": "any",
