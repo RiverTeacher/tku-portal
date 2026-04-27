@@ -1,4 +1,4 @@
-const SW_VERSION = '2026-03-30-01';
+const SW_VERSION = '2026-04-28';
 // インストールして即座にアクティブにする
 self.addEventListener('install', (event) => {
     self.skipWaiting();
